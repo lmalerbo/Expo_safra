@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell([io.file]::ReadAllBytes\\('c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\\\\consolidar.exe'\\).length / 1MB)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\" -Force | ForEach-Object { \"$\\($_.Mode\\) $\\($_.Name\\)\" })",
+      "PowerShell(Remove-Item \"c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\\\\ATUALIZAR.bat\" -Force -Confirm:$false)",
+      "PowerShell(python --version)"
+    ]
+  }
+}
