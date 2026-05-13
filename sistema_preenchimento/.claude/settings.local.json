@@ -4,7 +4,10 @@
       "PowerShell([io.file]::ReadAllBytes\\('c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\\\\consolidar.exe'\\).length / 1MB)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\" -Force | ForEach-Object { \"$\\($_.Mode\\) $\\($_.Name\\)\" })",
       "PowerShell(Remove-Item \"c:\\\\Users\\\\lmalerbo\\\\Documents\\\\HomeTaks\\\\icol\\\\v3\\\\sistema_preenchimento\\\\ATUALIZAR.bat\" -Force -Confirm:$false)",
-      "PowerShell(python --version)"
+      "PowerShell(python --version)",
+      "PowerShell(Get-ChildItem -Path \"g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento\" -File | Select-Object Name, @{Name=\"Size\\(KB\\)\";Expression={[Math]::Round\\($_.Length/1KB,2\\)}})",
+      "PowerShell(Get-ChildItem -Path \"g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento\\\\engine\" -File | Select-Object Name, @{Name=\"Size\\(KB\\)\";Expression={[Math]::Round\\($_.Length/1KB,2\\)}})",
+      "PowerShell(Get-ChildItem -Path \"g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento\" -File -Force | Format-Table Name, @{Name=\"Size\\(KB\\)\";Expression={[Math]::Round\\($_.Length/1KB,2\\)}} -AutoSize)"
     ]
   }
 }

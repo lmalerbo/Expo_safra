@@ -3,7 +3,8 @@ atualizar_programacao.py
 Uso: python atualizar_programacao.py  OU  duplo clique no ATUALIZAR.bat
 
 Estrutura esperada:
-  base_icol/base_icol.xlsm   ← base ICOL atualizada
+  base_icol/*.xlsm          ← base ICOL (agendamento por frente)
+  base_fazendas/*.xlsx      ← base mestre de talhões (área, estágio)
   programacao_frentes.xlsx
   formulario.html
 """
@@ -15,6 +16,20 @@ import datetime, os, sys, time, json, re
 
 DEST_FILE   = "programacao_frentes.xlsx"
 HTML_FILE   = "formulario.html"
+
+# Índices de coluna na aba "Programação" (1-based, conforme openpyxl)
+COL_LAYER   = 1
+COL_FRENTE  = 2
+COL_PERIODO = 3
+COL_DIA     = 4
+COL_CODFAZ  = 5
+COL_FAZENDA = 6
+COL_TALHAO  = 7
+COL_STATUS  = 8   # cabeçalho na planilha: EXPORTAÇÃO
+COL_TIPO    = 9   # cabeçalho: TIPO DE LINHA
+COL_CICLO   = 10
+COL_AREA_HA = 11
+COL_ESTAGIO = 12
 
 # ── Localiza o .xlsm em base_icol/ ───────────────────────────────────────
 import glob as _glob
@@ -59,61 +74,135 @@ preserved = {}
 for row in ws_ex.iter_rows(min_row=2, values_only=True):
     layer = row[0]
     if layer:
-        preserved[int(layer)] = (row[7] or '', row[8] or '', row[9] or '')
+        # índices 0-based → COL_STATUS-1, COL_TIPO-1, COL_CICLO-1
+        preserved[int(layer)] = (row[COL_STATUS-1] or '', row[COL_TIPO-1] or '', row[COL_CICLO-1] or '')
 wb_ex.close()
 print(f"  {len(preserved)} linhas existentes carregadas.\n")
 
-# ── 2. Ler base ICOL ──────────────────────────────────────────────────────
+# ── 2. Ler base_fazendas (mestre de talhões) ─────────────────────────────
+print("Verificando base fazendas...")
+_base_faz_files = _glob.glob("base_fazendas/*.xls*")
+df_base = None
+if not _base_faz_files:
+    print("  AVISO: Nenhum arquivo em base_fazendas/ — usando apenas ICOL.\n")
+else:
+    SOURCE_BASE = _base_faz_files[0]
+    print(f"  Base fazendas: {SOURCE_BASE}")
+    df_base = pd.read_excel(SOURCE_BASE, engine='openpyxl')
+    df_base = df_base.rename(columns={
+        'SECAO':     'COD FAZ',
+        'DESC_SECAO':'FAZENDA',
+        'TALHAO':    'TALHOES',
+        'AREA_PROD': 'AREA_HA',
+    })
+    df_base['COD FAZ'] = pd.to_numeric(df_base['COD FAZ'], errors='coerce')
+    df_base['TALHOES'] = pd.to_numeric(df_base['TALHOES'], errors='coerce')
+    df_base['AREA_HA'] = pd.to_numeric(df_base['AREA_HA'], errors='coerce')
+    if 'ESTAGIO' not in df_base.columns:
+        df_base['ESTAGIO'] = ''
+    df_base = df_base.dropna(subset=['COD FAZ', 'TALHOES']).reset_index(drop=True)
+    print(f"  {len(df_base)} talhões na base fazendas.\n")
+
+# ── 3. Ler base ICOL (agendamento por fazenda) ───────────────────────────
 print("Lendo base ICOL...")
-df_prog = pd.read_excel(SOURCE_XLSM, sheet_name='Programacao', header=None, engine='openpyxl')
-row7 = df_prog.iloc[7]
-frente_groups = []
-for col_idx, val in enumerate(row7):
-    if str(val).strip() == 'Frente':
-        frente_num = df_prog.iloc[7, col_idx + 1]
-        if pd.notna(frente_num):
-            frente_groups.append((col_idx, int(frente_num)))
-print(f"  Frentes: {[f for _, f in frente_groups]}")
+df_raw = pd.read_excel(SOURCE_XLSM, sheet_name='BASE PARA PLANEJAMENTO', header=None, engine='openpyxl')
 
-TARGET_NAMES = ['SEMANA - ANO', 'DIA', 'COD FAZ', 'FAZENDA', 'TALHOES', 'AREA_HA']
-all_frames = []
-for start_col, frente_num in frente_groups:
-    n_cols = df_prog.shape[1]
-    ha_col = start_col + 8
-    if ha_col < n_cols:
-        cols = [start_col + i for i in [0, 1, 2, 3, 4]] + [ha_col]
-    else:
-        cols = [start_col + i for i in range(5)]
-        TARGET_NAMES = ['SEMANA - ANO', 'DIA', 'COD FAZ', 'FAZENDA', 'TALHOES']
-    block = df_prog.iloc[9:, cols].copy()
-    block.columns = TARGET_NAMES[:len(cols)]
-    if 'AREA_HA' not in block.columns:
-        block['AREA_HA'] = None
-    block['FRENTE'] = frente_num
-    block = block.dropna(subset=['COD FAZ'])
-    all_frames.append(block)
+# Encontra primeira linha de dados (COD FAZ em AA=índice 26 deve ser numérico)
+first_data_row = None
+for idx, row_vals in df_raw.iterrows():
+    try:
+        val = float(str(row_vals.iloc[26]))
+        if not pd.isna(val):
+            first_data_row = idx
+            break
+    except (ValueError, TypeError):
+        continue
 
-result = pd.concat(all_frames, ignore_index=True)
-result = result.sort_values(['FRENTE', 'DIA']).reset_index(drop=True)
-result['DIA'] = pd.to_datetime(result['DIA'], errors='coerce')
+if first_data_row is None:
+    print("ERRO: Dados não encontrados na aba BASE PARA PLANEJAMENTO")
+    print("  Verifique se a aba existe e se COD FAZENDA está na coluna AA.")
+    input("\nPressione Enter para sair...")
+    sys.exit(1)
+
+# H=7 FRENTE, I=8 PERÍODO OP (mês), AA=26 COD FAZ, AB=27 FAZENDA
+df_data = df_raw.iloc[first_data_row:, [7, 8, 26, 27]].copy()
+df_data.columns = ['FRENTE', 'PERIODO_OP', 'COD FAZ', 'FAZENDA']
+
+df_icol = df_data.dropna(subset=['COD FAZ']).copy()
+df_icol['COD FAZ']    = pd.to_numeric(df_icol['COD FAZ'],    errors='coerce')
+df_icol['FRENTE']     = pd.to_numeric(df_icol['FRENTE'],     errors='coerce')
+df_icol['PERIODO_OP'] = pd.to_numeric(df_icol['PERIODO_OP'], errors='coerce')
+df_icol = df_icol.dropna(subset=['COD FAZ'])
+n_icol_raw = len(df_icol)
+df_icol = df_icol.drop_duplicates(subset=['COD FAZ'], keep='first').reset_index(drop=True)
+n_dup_icol = n_icol_raw - len(df_icol)
+print(f"  {len(df_icol)} fazendas únicas no ICOL{f' ({n_dup_icol} linhas duplicadas ignoradas)' if n_dup_icol else ''}.\n")
+
+# ── 4. Merge: ICOL (fazenda) LEFT JOIN base_fazendas (talhões) ───────────
+if df_base is not None:
+    result = df_icol[['COD FAZ', 'FAZENDA', 'FRENTE', 'PERIODO_OP']].merge(
+        df_base[['COD FAZ', 'TALHOES', 'AREA_HA', 'ESTAGIO']],
+        on='COD FAZ',
+        how='left'
+    )
+    sem_ha = result['AREA_HA'].isna().sum()
+    print(f"  {len(result)} talhões expandidos do ICOL — {len(result)-sem_ha} com AREA_HA, {sem_ha} sem.\n")
+    # Fazendas do ICOL sem nenhum talhão na base_fazendas (não aparecerão no dashboard)
+    faz_sem_base = result[result['TALHOES'].isna()].drop_duplicates('COD FAZ')
+    n_sem_base = len(faz_sem_base)
+    if n_sem_base:
+        print(f"  ⚠  {n_sem_base} fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):")
+        for _, r in faz_sem_base.head(10).iterrows():
+            print(f"     COD FAZ {int(r['COD FAZ'])}: {r['FAZENDA']}")
+        if n_sem_base > 10:
+            print(f"     ... e mais {n_sem_base - 10}")
+        print()
+else:
+    n_sem_base = 0
+    result = df_icol.copy()
+    result['TALHOES'] = None
+    result['AREA_HA'] = None
+    result['ESTAGIO'] = ''
+
+result = result.sort_values(['FRENTE', 'PERIODO_OP']).reset_index(drop=True)
+
+# Fazendas com COD FAZ iniciando em 20 são unidades administrativas (sede, almoxarifado)
+# que não têm colheita programada — devem ser excluídas da programação
+CODFAZ_EXCLUIR_PREFIXO = '20'
+n_antes_20x = result['COD FAZ'].nunique()
+result = result[~result['COD FAZ'].astype(str).str.startswith(CODFAZ_EXCLUIR_PREFIXO)].reset_index(drop=True)
+n_excluidas_20x = n_antes_20x - result['COD FAZ'].nunique()
+if n_excluidas_20x:
+    print(f"  Filtro administrativo (COD FAZ {CODFAZ_EXCLUIR_PREFIXO}x): {n_excluidas_20x} fazenda(s) excluída(s).\n")
 
 def make_layer(row):
     try: return int(f"{int(row['COD FAZ'])}{int(row['TALHOES']):03d}")
-    except: return None
+    except (ValueError, TypeError, KeyError): return None
 
 result['LAYER'] = result.apply(make_layer, axis=1)
 
-# Lookup de área (ha) por (COD FAZ, TALHAO) — usa primeira ocorrência não-nula
+# ha_lookup para consulta rápida (COD FAZ, TALHOES) → AREA_HA
 ha_lookup = {}
+if df_base is not None:
+    for _, row in df_base.iterrows():
+        try:
+            key = (int(row['COD FAZ']), int(row['TALHOES']))
+            if pd.notna(row.get('AREA_HA')):
+                ha_lookup[key] = round(float(row['AREA_HA']), 2)
+        except (ValueError, TypeError):
+            pass
+
+# Índice LAYER → ha (para usar na leitura do log)
+layer_ha = {}
 for _, row in result.iterrows():
     try:
-        key = (int(row['COD FAZ']), int(row['TALHOES']))
-        if key not in ha_lookup and pd.notna(row.get('AREA_HA')):
-            ha_lookup[key] = round(float(row['AREA_HA']), 2)
+        ly = int(row['LAYER']) if pd.notna(row['LAYER']) else None
+        if ly is not None:
+            layer_ha[ly] = ha_lookup.get((int(row['COD FAZ']), int(row['TALHOES'])), 0)
     except (ValueError, TypeError):
         pass
 
-print(f"  {len(result)} linhas lidas.\n")
+print(f"  {len(result)} linhas para processar.\n")
 
 # ── 3. Atualizar planilha ─────────────────────────────────────────────────
 print("Atualizando planilha...")
@@ -126,10 +215,29 @@ frente_row_colors = {2:"DDEEFF",3:"E8F2FB",4:"D6E4F5",5:"EBF3FF",
 thin   = Side(style="thin", color="BFBFBF")
 border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
+today = datetime.date.today()
+
+# Garante cabeçalhos para colunas que podem não existir em templates antigos
+if ws.cell(1, COL_PERIODO).value not in ('PERÍODO OP', 'PERÍODO OPERACIONAL'):
+    h = ws.cell(1, COL_PERIODO, value='PERÍODO OP')
+    h.font      = Font(name="Arial", bold=True, size=10)
+    h.border    = border
+    h.alignment = Alignment(horizontal="center", vertical="center")
+if ws.cell(1, COL_AREA_HA).value != 'AREA_HA':
+    h = ws.cell(1, COL_AREA_HA, value='AREA_HA')
+    h.font      = Font(name="Arial", bold=True, size=10)
+    h.border    = border
+    h.alignment = Alignment(horizontal="center", vertical="center")
+if ws.cell(1, COL_ESTAGIO).value != 'ESTÁGIO':
+    h = ws.cell(1, COL_ESTAGIO, value='ESTÁGIO')
+    h.font      = Font(name="Arial", bold=True, size=10)
+    h.border    = border
+    h.alignment = Alignment(horizontal="center", vertical="center")
+
 novos = 0
 for i, row in result.iterrows():
     r      = i + 2
-    frente = int(row['FRENTE'])
+    frente = int(row['FRENTE']) if pd.notna(row.get('FRENTE')) else 0
     cor    = frente_row_colors.get(frente, "FFFFFF")
     fill   = PatternFill("solid", start_color=cor, end_color=cor)
     layer  = row['LAYER']
@@ -138,28 +246,47 @@ for i, row in result.iterrows():
     else:
         exp, tipo, ciclo = '', '', ''
         novos += 1
-    dia = row['DIA']
-    dia = dia.date() if pd.notna(dia) else ''
+    try:
+        ha_val = ha_lookup.get((int(row['COD FAZ']), int(row['TALHOES'])), 0)
+    except (ValueError, TypeError):
+        ha_val = 0
+    estagio = str(row.get('ESTAGIO', '') or '').strip()
+    periodo = int(row['PERIODO_OP']) if pd.notna(row.get('PERIODO_OP')) else ''
     vals = [
         layer if layer else '', frente,
-        int(row['SEMANA - ANO']) if pd.notna(row['SEMANA - ANO']) else '',
-        dia,
+        periodo,
+        '',  # COL_DIA — sem data na nova estrutura
         int(row['COD FAZ']) if pd.notna(row['COD FAZ']) else '',
         str(row['FAZENDA']) if pd.notna(row['FAZENDA']) else '',
-        int(row['TALHOES']) if pd.notna(row['TALHOES']) else '',
+        int(row['TALHOES']) if pd.notna(row.get('TALHOES')) else '',
         exp, tipo, ciclo,
+        ha_val,
+        estagio,
     ]
     for c, val in enumerate(vals, 1):
         cell = ws.cell(row=r, column=c, value=val)
         cell.font      = Font(name="Arial", size=10)
         cell.fill      = fill
         cell.border    = border
-        cell.alignment = Alignment(horizontal="left" if c==6 else "center", vertical="center")
-        if c == 4 and isinstance(val, datetime.date):
-            cell.number_format = 'DD/MM/YYYY'
+        cell.alignment = Alignment(horizontal="left" if c==COL_FAZENDA else "center", vertical="center")
+        if c == COL_AREA_HA:
+            cell.number_format = '#,##0.00'
 
 wb.save(DEST_FILE)
 print(f"  Planilha atualizada. Novas linhas: {novos}\n")
+
+# ── Aviso: LAYERs com preenchimento removidos desta atualização ───────────
+layers_novos = set(result['LAYER'].dropna().astype(int))
+layers_com_preenchimento = {ly for ly, vals in preserved.items() if any(str(v).strip() for v in vals)}
+removidos_icol = layers_com_preenchimento - layers_novos
+if removidos_icol:
+    print(f"  ⚠  ATENÇÃO: {len(removidos_icol)} LAYER(s) preenchidos foram removidos desta base ICOL:")
+    for ly in sorted(removidos_icol)[:10]:
+        exp, tipo, ciclo = preserved[ly]
+        print(f"     LAYER {ly}: {exp} | {tipo} | {ciclo}")
+    if len(removidos_icol) > 10:
+        print(f"     ... e mais {len(removidos_icol)-10}")
+    print("     Esses dados NÃO foram perdidos — apenas saíram do ICOL atual.\n")
 
 # ── 4. Gerar dados para o HTML ────────────────────────────────────────────
 print("Gerando dados para o formulario...")
@@ -172,7 +299,7 @@ for _, row in df_html.iterrows():
     layer = int(row['LAYER']) if pd.notna(row['LAYER']) else None
     cod  = int(row['COD FAZ']) if pd.notna(row['COD FAZ']) else None
     frente = int(row['FRENTE']) if pd.notna(row['FRENTE']) else None
-    semana = int(row['SEMANA - ANO']) if pd.notna(row['SEMANA - ANO']) else None
+    semana = int(row['PERÍODO OP']) if pd.notna(row.get('PERÍODO OP')) else None
     exp  = str(row['EXPORTAÇÃO']).strip() if pd.notna(row['EXPORTAÇÃO']) and str(row['EXPORTAÇÃO']) not in ['','nan'] else ''
     tipo = str(row['TIPO DE LINHA']).strip() if pd.notna(row['TIPO DE LINHA']) and str(row['TIPO DE LINHA']) not in ['','nan'] else ''
     ciclo = str(row['CICLO']).strip() if pd.notna(row['CICLO']) and str(row['CICLO']) not in ['','nan'] else ''
@@ -185,27 +312,68 @@ for _, row in df_html.iterrows():
     tal_key = str(tal)
     if tal_key not in fazendas_data[faz]['talhoes']:
         ha = ha_lookup.get((cod, tal), 0)
+        estagio_str = str(row.get('ESTÁGIO', '') or '').strip()
         fazendas_data[faz]['talhoes'][tal_key] = {
             'layer': layer, 'frente': frente, 'semana': semana,
-            'exp': exp, 'tipo': tipo, 'ciclo': ciclo, 'ha': ha
+            'exp': exp, 'tipo': tipo, 'ciclo': ciclo, 'ha': ha, 'dia': None,
+            'estagio': estagio_str
         }
 
 faz_json = json.dumps(fazendas_data, ensure_ascii=False)
-print(f"  {len(fazendas_data)} fazendas, {sum(len(v['talhoes']) for v in fazendas_data.values())} talhoes.\n")
+n_html_faz = len(fazendas_data)
+n_html_tal = sum(len(v['talhoes']) for v in fazendas_data.values())
+print(f"  {n_html_faz} fazendas, {n_html_tal} talhões → HTML.\n")
+print(f"  Resumo do funil de fazendas:")
+print(f"    ICOL bruto                : {n_icol_raw}")
+if n_dup_icol:    print(f"    (-) Duplicatas COD FAZ    : {n_dup_icol}")
+if n_excluidas_20x: print(f"    (-) Administrativas (20x) : {n_excluidas_20x}")
+if n_sem_base:    print(f"    (-) Sem talhão na base    : {n_sem_base}")
+print(f"    (=) No dashboard          : {n_html_faz}\n")
+
+# Ler Log Exportações → ha por usuário
+print("Lendo log de exportacoes...")
+usuario_ha = {}
+LOG_SHEET = "Log Exportações"
+try:
+    df_log = pd.read_excel(DEST_FILE, sheet_name=LOG_SHEET)
+    # 1 entrada por LAYER (última submissão), para não inflar ha do mesmo talhão
+    df_log_dedup = df_log.drop_duplicates(subset='LAYER', keep='last')
+    for _, row in df_log_dedup.iterrows():
+        usuario = str(row.get('USUARIO', '') or '').strip()
+        if not usuario or usuario in ('nan', ''): continue
+        try:
+            ly = int(float(str(row.get('LAYER', 0) or 0)))
+            ha = layer_ha.get(ly, 0)
+            usuario_ha[usuario] = round(usuario_ha.get(usuario, 0) + ha, 2)
+        except (ValueError, TypeError):
+            pass
+    print(f"  {len(usuario_ha)} usuário(s) no log.\n")
+except Exception as e:
+    print(f"  AVISO: log nao encontrado ou vazio ({e})\n")
+
+usuarios_json = json.dumps(usuario_ha, ensure_ascii=False)
+
+# Ler configuração de usuários
+_usuarios_config = []
+if os.path.exists('usuarios.json'):
+    try:
+        with open('usuarios.json', 'r', encoding='utf-8') as f:
+            _usuarios_config = json.load(f)
+    except Exception as e:
+        print(f"  AVISO: nao foi possivel ler usuarios.json ({e})\n")
+usuarios_config_json = json.dumps(_usuarios_config, ensure_ascii=False)
 
 # ── 5. Atualizar HTML ─────────────────────────────────────────────────────
 print("Atualizando formulario.html...")
 with open(HTML_FILE, 'r', encoding='utf-8') as f:
     html_content = f.read()
 
-# Substitui o bloco de dados entre os marcadores
-new_data_block = f"const FAZENDAS = {faz_json};"
-html_updated = re.sub(
-    r'const FAZENDAS = \{.*?\};',
-    new_data_block,
-    html_content,
-    flags=re.DOTALL
-)
+html_updated = re.sub(r'const FAZENDAS = \{.*?\};',
+    f"const FAZENDAS = {faz_json};", html_content, flags=re.DOTALL)
+html_updated = re.sub(r'const USUARIOS_HA = \{.*?\};',
+    f"const USUARIOS_HA = {usuarios_json};", html_updated, flags=re.DOTALL)
+html_updated = re.sub(r'const USUARIOS_CONFIG = \[.*?\];',
+    f"const USUARIOS_CONFIG = {usuarios_config_json};", html_updated, flags=re.DOTALL)
 
 if html_updated == html_content:
     print("  AVISO: marcador 'const FAZENDAS' nao encontrado no HTML.")
@@ -218,9 +386,12 @@ else:
 # ── Resumo ────────────────────────────────────────────────────────────────
 print(f"{'='*50}")
 print(f"  Atualizacao concluida!")
-print(f"  Total linhas  : {len(result)}")
-print(f"  Novas         : {novos}")
-print(f"  Preservadas   : {len(result) - novos}")
+print(f"  Total talhoes : {len(result)}")
+if df_base is not None:
+    sem_ha = result['AREA_HA'].isna().sum()
+    print(f"  Com AREA_HA   : {len(result) - sem_ha}")
+    print(f"  Sem AREA_HA   : {sem_ha}")
+print(f"  Preservados   : {len(result) - novos}")
 print(f"  HTML regerado : sim")
 print(f"{'='*50}")
 input("\nPressione Enter para fechar...")
