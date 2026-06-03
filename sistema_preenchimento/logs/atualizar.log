@@ -1,0 +1,295 @@
+
+============================================================
+[2026-05-20 15:18:53] Sessão iniciada
+============================================================
+Base ICOL encontrada: base_icol\MAPA DE COLHEITABILIDADE PEDRA 2026 - RODAR VS 1.xlsm
+Verificando se a planilha esta aberta...
+  OK.
+
+Lendo dados existentes na planilha...
+  4382 linhas existentes carregadas.
+
+Verificando base fazendas...
+  Base fazendas: base_fazendas\base.xlsx
+  7258 talhões na base fazendas.
+
+Lendo base ICOL...
+  556 fazendas únicas no ICOL (3507 linhas duplicadas ignoradas).
+
+  4387 talhões expandidos do ICOL — 4382 com AREA_HA, 5 sem.
+
+  ⚠  5 fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):
+     COD FAZ 10817: RECANTO 3
+     COD FAZ 20623: CACHOEIRA II
+     COD FAZ 20630: BAIXAO
+     COD FAZ 20689: SÃO LOURENÇO
+     COD FAZ 20622: GRACIOSA
+
+  Filtro administrativo (COD FAZ 20x): 4 fazenda(s) excluída(s).
+
+  4383 linhas para processar.
+
+Atualizando planilha...
+  Planilha atualizada. Novas linhas: 1
+
+Gerando dados para o formulario...
+  548 fazendas, 4355 talhões → HTML.
+
+  Resumo do funil de fazendas:
+    ICOL bruto                : 4063
+    (-) Duplicatas COD FAZ    : 3507
+    (-) Administrativas (20x) : 4
+    (-) Sem talhão na base    : 5
+    (=) No dashboard          : 548
+
+Lendo log de exportacoes...
+  3 usuário(s) no log.
+
+Atualizando formulario.html...
+  formulario.html atualizado — sem alterações.
+
+==================================================
+  Atualizacao concluida!
+  Total talhoes : 4383
+  Com AREA_HA   : 4382
+  Sem AREA_HA   : 1
+  Preservados   : 4382
+  HTML regerado : sim
+==================================================
+[2026-05-20 15:19:08] Sessão encerrada
+
+============================================================
+[2026-05-20 15:19:53] Sessão iniciada
+============================================================
+Base ICOL encontrada: base_icol\MAPA DE COLHEITABILIDADE PEDRA 2026.xlsm
+Verificando se a planilha esta aberta...
+  OK.
+
+Lendo dados existentes na planilha...
+  4382 linhas existentes carregadas.
+
+Verificando base fazendas...
+  Base fazendas: base_fazendas\base.xlsx
+  7258 talhões na base fazendas.
+
+Lendo base ICOL...
+  556 fazendas únicas no ICOL (3507 linhas duplicadas ignoradas).
+
+  4387 talhões expandidos do ICOL — 4382 com AREA_HA, 5 sem.
+
+  ⚠  5 fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):
+     COD FAZ 10817: RECANTO 3
+     COD FAZ 20623: CACHOEIRA II
+     COD FAZ 20630: BAIXAO
+     COD FAZ 20689: SÃO LOURENÇO
+     COD FAZ 20622: GRACIOSA
+
+  Filtro administrativo (COD FAZ 20x): 4 fazenda(s) excluída(s).
+
+  4383 linhas para processar.
+
+Atualizando planilha...
+  Planilha atualizada. Novas linhas: 1
+
+Gerando dados para o formulario...
+  548 fazendas, 4355 talhões → HTML.
+
+  Resumo do funil de fazendas:
+    ICOL bruto                : 4063
+    (-) Duplicatas COD FAZ    : 3507
+    (-) Administrativas (20x) : 4
+    (-) Sem talhão na base    : 5
+    (=) No dashboard          : 548
+
+Lendo log de exportacoes...
+  3 usuário(s) no log.
+
+Atualizando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Atualizacao concluida!
+  Total talhoes : 4383
+  Com AREA_HA   : 4382
+  Sem AREA_HA   : 1
+  Preservados   : 4382
+  HTML regerado : sim
+==================================================
+[2026-05-20 15:20:07] Sessão encerrada
+
+============================================================
+[2026-05-25 11:46:51] Sessão iniciada
+============================================================
+Base ICOL encontrada: base_icol\MAPA DE COLHEITABILIDADE PEDRA 2026.xlsm
+Verificando se a planilha esta aberta...
+  OK.
+
+Lendo dados existentes na planilha...
+  4382 linhas existentes carregadas.
+
+Verificando base fazendas...
+  Base fazendas: base_fazendas\base.xlsx
+  7258 talhões na base fazendas.
+
+Lendo base ICOL...
+  556 fazendas únicas no ICOL (3507 linhas duplicadas ignoradas).
+
+  4387 talhões expandidos do ICOL — 4382 com AREA_HA, 5 sem.
+
+  ⚠  5 fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):
+     COD FAZ 10817: RECANTO 3
+     COD FAZ 20623: CACHOEIRA II
+     COD FAZ 20630: BAIXAO
+     COD FAZ 20689: SÃO LOURENÇO
+     COD FAZ 20622: GRACIOSA
+
+  Filtro administrativo (COD FAZ 20x): 4 fazenda(s) excluída(s).
+
+  4383 linhas para processar.
+
+Atualizando planilha...
+  Planilha atualizada. Novas linhas: 1
+
+Gerando dados para o formulario...
+  548 fazendas, 4355 talhões → HTML.
+
+  Resumo do funil de fazendas:
+    ICOL bruto                : 4063
+    (-) Duplicatas COD FAZ    : 3507
+    (-) Administrativas (20x) : 4
+    (-) Sem talhão na base    : 5
+    (=) No dashboard          : 548
+
+Lendo log de exportacoes...
+  3 usuário(s) no log.
+
+Atualizando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Atualizacao concluida!
+  Total talhoes : 4383
+  Com AREA_HA   : 4382
+  Sem AREA_HA   : 1
+  Preservados   : 4382
+  HTML regerado : sim
+==================================================
+[2026-05-25 11:47:13] Sessão encerrada
+
+============================================================
+[2026-05-25 11:47:19] Sessão iniciada
+============================================================
+Base ICOL encontrada: base_icol\MAPA DE COLHEITABILIDADE PEDRA 2026.xlsm
+Verificando se a planilha esta aberta...
+  OK.
+
+Lendo dados existentes na planilha...
+  4382 linhas existentes carregadas.
+
+Verificando base fazendas...
+  Base fazendas: base_fazendas\base.xlsx
+  7258 talhões na base fazendas.
+
+Lendo base ICOL...
+  556 fazendas únicas no ICOL (3507 linhas duplicadas ignoradas).
+
+  4387 talhões expandidos do ICOL — 4382 com AREA_HA, 5 sem.
+
+  ⚠  5 fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):
+     COD FAZ 10817: RECANTO 3
+     COD FAZ 20623: CACHOEIRA II
+     COD FAZ 20630: BAIXAO
+     COD FAZ 20689: SÃO LOURENÇO
+     COD FAZ 20622: GRACIOSA
+
+  Filtro administrativo (COD FAZ 20x): 4 fazenda(s) excluída(s).
+
+  4383 linhas para processar.
+
+Atualizando planilha...
+  Planilha atualizada. Novas linhas: 1
+
+Gerando dados para o formulario...
+  548 fazendas, 4355 talhões → HTML.
+
+  Resumo do funil de fazendas:
+    ICOL bruto                : 4063
+    (-) Duplicatas COD FAZ    : 3507
+    (-) Administrativas (20x) : 4
+    (-) Sem talhão na base    : 5
+    (=) No dashboard          : 548
+
+Lendo log de exportacoes...
+  3 usuário(s) no log.
+
+Atualizando formulario.html...
+  formulario.html atualizado — sem alterações.
+
+==================================================
+  Atualizacao concluida!
+  Total talhoes : 4383
+  Com AREA_HA   : 4382
+  Sem AREA_HA   : 1
+  Preservados   : 4382
+  HTML regerado : sim
+==================================================
+[2026-05-25 11:47:38] Sessão encerrada
+
+============================================================
+[2026-05-27 13:19:48] Sessão iniciada
+============================================================
+Base ICOL encontrada: base_icol\MAPA DE COLHEITABILIDADE PEDRA 2026.xlsm
+Verificando se a planilha esta aberta...
+  OK.
+
+Lendo dados existentes na planilha...
+  4382 linhas existentes carregadas.
+
+Verificando base fazendas...
+  Base fazendas: base_fazendas\base.xlsx
+  7258 talhões na base fazendas.
+
+Lendo base ICOL...
+  556 fazendas únicas no ICOL (3507 linhas duplicadas ignoradas).
+
+  4387 talhões expandidos do ICOL — 4382 com AREA_HA, 5 sem.
+
+  ⚠  5 fazenda(s) do ICOL sem talhões na base_fazendas (serão omitidas do dashboard):
+     COD FAZ 10817: RECANTO 3
+     COD FAZ 20623: CACHOEIRA II
+     COD FAZ 20630: BAIXAO
+     COD FAZ 20689: SÃO LOURENÇO
+     COD FAZ 20622: GRACIOSA
+
+  Filtro administrativo (COD FAZ 20x): 4 fazenda(s) excluída(s).
+
+  4383 linhas para processar.
+
+Atualizando planilha...
+  Planilha atualizada. Novas linhas: 1
+
+Gerando dados para o formulario...
+  548 fazendas, 4355 talhões → HTML.
+
+  Resumo do funil de fazendas:
+    ICOL bruto                : 4063
+    (-) Duplicatas COD FAZ    : 3507
+    (-) Administrativas (20x) : 4
+    (-) Sem talhão na base    : 5
+    (=) No dashboard          : 548
+
+Lendo log de exportacoes...
+  3 usuário(s) no log.
+
+Atualizando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Atualizacao concluida!
+  Total talhoes : 4383
+  Com AREA_HA   : 4382
+  Sem AREA_HA   : 1
+  Preservados   : 4382
+  HTML regerado : sim
+==================================================
+[2026-05-27 13:20:09] Sessão encerrada

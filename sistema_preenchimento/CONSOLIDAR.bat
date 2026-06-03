@@ -10,12 +10,20 @@ echo.
 
 cd /d "%~dp0"
 
-if not exist "engine\consolidar.exe" (
-    color 0C
-    echo  ERRO: engine\consolidar.exe nao encontrado.
+if exist "engine\consolidar.exe" (
+    set RUNNER=engine\consolidar.exe
+) else (
+    python --version >nul 2>&1
+    if errorlevel 1 (
+        color 0C
+        echo  ERRO: consolidar.exe nao encontrado e Python nao esta instalado.
+        echo.
+        pause
+        exit /b 1
+    )
+    set RUNNER=python engine\consolidar.py
+    echo  AVISO: consolidar.exe nao encontrado — usando Python diretamente.
     echo.
-    pause
-    exit /b 1
 )
 
 if not exist "programacao_frentes.xlsx" (
@@ -49,7 +57,7 @@ echo.
 echo  ------------------------------------------------
 echo.
 
-engine\consolidar.exe
+%RUNNER%
 
 echo.
 if errorlevel 1 (

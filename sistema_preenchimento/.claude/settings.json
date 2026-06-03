@@ -1,11 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Head -3)",
-      "PowerShell(python --version 2>&1)",
-      "PowerShell(Rename-Item -Path \"g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento\\\\engine\\\\atualizar_programacao.exe\" -NewName \"atualizar_programacao.exe.bak\")",
-      "PowerShell(Get-ChildItem -Recurse -Path \"g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento\" | Select-Object FullName, @{Name=\"Size\";Expression={if\\($_.PSIsContainer\\){\"[DIR]\"}else{\"{0:N0} B\" -f $_.Length}}} | Format-Table -AutoSize)",
-      "PowerShell(Get-ChildItem -Path 'g:\\\\GeoProc\\\\GEOTECNOLOGIA\\\\01 CONTROLE ESCRITORIO\\\\16 - PLANILHAS\\\\sistema_preenchimento' -Recurse | Where-Object {$_.Extension -in '.py','.bat','.exe','.txt','.md'} | Select-Object FullName, Extension, Length | Sort-Object FullName | Format-Table -AutoSize)"
+      "Bash(*)",
+      "PowerShell(*)"
     ]
   }
 }

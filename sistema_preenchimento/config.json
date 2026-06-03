@@ -1,0 +1,24 @@
+{
+  "_comentario": "Configurações centrais do sistema de preenchimento de frentes.",
+
+  "intervalo_vigia_s": 2,
+  "timeout_consolidar_s": 180,
+  "tentativas_arquivo_bloqueado": 3,
+  "espera_arquivo_bloqueado_s": 10,
+  "codfaz_excluir_prefixo": "20",
+
+  "col_indices": {
+    "LAYER":      1,
+    "FRENTE":     2,
+    "PERIODO_OP": 3,
+    "DIA":        4,
+    "COD_FAZ":    5,
+    "FAZENDA":    6,
+    "TALHAO":     7,
+    "STATUS":     8,
+    "TIPO_LINHA": 9,
+    "CICLO":      10,
+    "AREA_HA":    11,
+    "ESTAGIO":    12
+  }
+}
