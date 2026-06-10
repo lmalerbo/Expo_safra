@@ -1,0 +1,15 @@
+# Dados de runtime / estado do sistema (ficam só no servidor/G:, não no git)
+__pycache__/
+*.pyc
+
+logs/*.log
+
+consolidar_queue/*.json
+
+exports/
+
+programacao_frentes.xlsx
+
+# Bases de dados de entrada (grandes, atualizadas fora do git)
+base_icol/*.xlsm
+base_fazendas/*.xls*
