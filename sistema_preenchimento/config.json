@@ -7,6 +7,10 @@
   "espera_arquivo_bloqueado_s": 10,
   "codfaz_excluir_prefixo": "20",
 
+  "pasta_raiz_fazendas": "I:\\Projetos\\EXPORTAÇÃO SAFRA\\Colheita",
+  "pasta_destino_dwg":   "I:\\Projetos\\EXPORTAÇÃO SAFRA\\Colheita\\dwg",
+  "pasta_destino_zip":   "I:\\Projetos\\EXPORTAÇÃO SAFRA\\Colheita\\exportacao",
+
   "col_indices": {
     "LAYER":      1,
     "FRENTE":     2,

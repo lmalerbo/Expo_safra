@@ -4340,3 +4340,720 @@ Regenerando formulario.html...
   Log salvo na aba 'Log Exportações'
 ==================================================
 [2026-06-01 12:25:05] Sessão encerrada
+
+============================================================
+[2026-06-05 09:00:12] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_lmalerbo_2026-06-05_1780660810048.xlsx — 3 registros
+
+Total de registros para processar: 3
+Após deduplicação por LAYER: 3 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 3
+
+============================================================
+  ATENÇÃO: 3 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 3 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 3
+  Linhas atualizadas    : 3
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 09:00:19] Sessão encerrada
+
+============================================================
+[2026-06-05 11:02:54] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780668171677.xlsx — 10 registros
+
+Total de registros para processar: 10
+Após deduplicação por LAYER: 10 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 1
+  Com conflito (já preenchidos)   : 9
+
+============================================================
+  ATENÇÃO: 9 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 9 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 10
+  Linhas atualizadas    : 10
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 11:03:07] Sessão encerrada
+
+============================================================
+[2026-06-05 11:07:30] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780668448630.xlsx — 9 registros
+
+Total de registros para processar: 9
+Após deduplicação por LAYER: 9 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 9
+
+============================================================
+  ATENÇÃO: 9 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 9 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 9
+  Linhas atualizadas    : 9
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 11:07:41] Sessão encerrada
+
+============================================================
+[2026-06-05 11:51:59] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780671109543.xlsx — 18 registros
+
+Total de registros para processar: 18
+Após deduplicação por LAYER: 18 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 18
+
+============================================================
+  ATENÇÃO: 18 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 18 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 18
+  Linhas atualizadas    : 18
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 11:52:09] Sessão encerrada
+
+============================================================
+[2026-06-05 16:03:33] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780686205699.xlsx — 10 registros
+
+Total de registros para processar: 10
+Após deduplicação por LAYER: 10 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 10
+
+============================================================
+  ATENÇÃO: 10 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 10 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 10
+  Linhas atualizadas    : 10
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 16:03:50] Sessão encerrada
+
+============================================================
+[2026-06-05 16:20:54] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780687246561.xlsx — 2 registros
+
+Total de registros para processar: 2
+Após deduplicação por LAYER: 2 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 2
+
+============================================================
+  ATENÇÃO: 2 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 2 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 2
+  Linhas atualizadas    : 2
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 16:21:04] Sessão encerrada
+
+============================================================
+[2026-06-05 16:33:27] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-05_1780687999512.xlsx — 2 registros
+
+Total de registros para processar: 2
+Após deduplicação por LAYER: 2 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 2
+
+============================================================
+  ATENÇÃO: 2 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 2 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 2
+  Linhas atualizadas    : 2
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-05 16:33:40] Sessão encerrada
+
+============================================================
+[2026-06-10 08:03:34] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-08_1780925207895.xlsx — 1 registros
+
+Total de registros para processar: 1
+Após deduplicação por LAYER: 1 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 1
+
+============================================================
+  ATENÇÃO: 1 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 1 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — sem alterações.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 1
+  Linhas atualizadas    : 1
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 08:03:37] Sessão encerrada
+
+============================================================
+[2026-06-10 08:16:50] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781090208254.xlsx — 4 registros
+
+Total de registros para processar: 4
+Após deduplicação por LAYER: 4 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 4
+
+============================================================
+  ATENÇÃO: 4 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 4 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 4
+  Linhas atualizadas    : 4
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 08:16:56] Sessão encerrada
+
+============================================================
+[2026-06-10 08:17:38] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781090251607.xlsx — 1 registros
+
+Total de registros para processar: 1
+Após deduplicação por LAYER: 1 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 1
+  Com conflito (já preenchidos)   : 0
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 1
+  Linhas atualizadas    : 1
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 08:17:43] Sessão encerrada
+
+============================================================
+[2026-06-10 10:05:56] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781096747331.xlsx — 13 registros
+
+Total de registros para processar: 13
+Após deduplicação por LAYER: 13 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 1
+  Com conflito (já preenchidos)   : 12
+
+============================================================
+  ATENÇÃO: 12 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 12 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 13
+  Linhas atualizadas    : 13
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 10:06:09] Sessão encerrada
+
+============================================================
+[2026-06-10 10:58:26] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781099900707.xlsx — 2 registros
+
+Total de registros para processar: 2
+Após deduplicação por LAYER: 2 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 2
+
+============================================================
+  ATENÇÃO: 2 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 2 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 2
+  Linhas atualizadas    : 2
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 10:58:35] Sessão encerrada
+
+============================================================
+[2026-06-10 11:04:08] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781100245806.xlsx — 2 registros
+
+Total de registros para processar: 2
+Após deduplicação por LAYER: 2 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 2
+
+============================================================
+  ATENÇÃO: 2 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 2 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 2
+  Linhas atualizadas    : 2
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 11:04:16] Sessão encerrada
+
+============================================================
+[2026-06-10 11:12:59] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_igabriel_2026-06-10_1781100773379.xlsx — 35 registros
+
+Total de registros para processar: 35
+Após deduplicação por LAYER: 35 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 35
+  Com conflito (já preenchidos)   : 0
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 35
+  Linhas atualizadas    : 35
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 11:13:07] Sessão encerrada
+
+============================================================
+[2026-06-10 11:14:40] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_igabriel_2026-06-10_1781100873460.xlsx — 2 registros
+
+Total de registros para processar: 2
+Após deduplicação por LAYER: 2 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 2
+  Com conflito (já preenchidos)   : 0
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 2
+  Linhas atualizadas    : 2
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 11:14:49] Sessão encerrada
+
+============================================================
+[2026-06-10 14:37:28] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781113045787.xlsx — 8 registros
+
+Total de registros para processar: 8
+Após deduplicação por LAYER: 8 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 8
+
+============================================================
+  ATENÇÃO: 8 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 8 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 8
+  Linhas atualizadas    : 8
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 14:37:34] Sessão encerrada
+
+============================================================
+[2026-06-10 14:53:56] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781114033263.xlsx — 14 registros
+
+Total de registros para processar: 14
+Após deduplicação por LAYER: 14 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 8
+  Com conflito (já preenchidos)   : 6
+
+============================================================
+  ATENÇÃO: 6 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 6 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 14
+  Linhas atualizadas    : 14
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 14:54:01] Sessão encerrada
+
+============================================================
+[2026-06-10 15:14:45] Sessão iniciada
+============================================================
+Encontrados 1 arquivo(s) de export:
+
+  ✓ export_frentes_jcamilo_2026-06-10_1781115280628.xlsx — 1 registros
+
+Total de registros para processar: 1
+Após deduplicação por LAYER: 1 registros únicos
+
+Verificando conflitos na planilha mestre...
+  Sem conflito (serão preenchidos): 0
+  Com conflito (já preenchidos)   : 1
+
+============================================================
+  ATENÇÃO: 1 talhão(ões) já têm preenchimento.
+============================================================
+
+O que deseja fazer?
+
+  1 - Ver cada conflito e decidir um por um
+  2 - Sobrescrever TODOS automaticamente
+  3 - Manter TODOS (não sobrescreve nenhum conflito)
+
+Digite 1, 2 ou 3: 
+  → Todos os 1 conflitos serão sobrescritos.
+
+Aplicando atualizações...
+
+Regenerando formulario.html...
+  formulario.html atualizado — 548 fazendas, 4355 talhões.
+
+==================================================
+  Consolidação concluída!
+  Registros processados : 1
+  Linhas atualizadas    : 1
+  Conflitos ignorados   : 0
+  Arquivos movidos para : exports\processados/ (1/1)
+  Log salvo na aba 'Log Exportações'
+==================================================
+[2026-06-10 15:14:50] Sessão encerrada

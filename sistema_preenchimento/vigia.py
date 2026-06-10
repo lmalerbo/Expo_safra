@@ -9,6 +9,8 @@ Uso: python vigia.py  (ou via INICIAR_VIGIA.bat)
 
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import time
@@ -106,6 +108,59 @@ def _rodar_consolidar():
         return False, f'ERRO ao executar consolidar.py: {e}'
 
 
+_PADRAO_ARQ = re.compile(r'^(\d+)_.+_Exp\d+L\.(dwg|zip)$', re.IGNORECASE)
+
+
+def _copiar_arquivos_projeto(records):
+    pasta_raiz = _cfg.get('pasta_raiz_fazendas', '')
+    pasta_dwg  = _cfg.get('pasta_destino_dwg', '')
+    pasta_zip  = _cfg.get('pasta_destino_zip', '')
+
+    if not all([pasta_raiz, pasta_dwg, pasta_zip]):
+        return {'copiados': [], 'erros': ['Caminhos não configurados em config.json']}
+
+    if not os.path.isdir(pasta_raiz):
+        return {'copiados': [], 'erros': [f'Pasta raiz não encontrada: {pasta_raiz}']}
+
+    cod_faz_set = {str(r.get('cod_faz', '')) for r in records if r.get('cod_faz')}
+    if not cod_faz_set:
+        return {'copiados': [], 'erros': []}
+
+    try:
+        os.makedirs(pasta_dwg, exist_ok=True)
+        os.makedirs(pasta_zip, exist_ok=True)
+    except Exception as e:
+        return {'copiados': [], 'erros': [f'Erro ao criar pastas destino: {e}']}
+
+    copiados, erros = [], []
+    for folder_name in os.listdir(pasta_raiz):
+        folder_path = os.path.join(pasta_raiz, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+        cod = folder_name.split(' ')[0]
+        if cod not in cod_faz_set:
+            continue
+        for root, dirs, files in os.walk(folder_path):
+            depth = root[len(folder_path):].count(os.sep)
+            if depth > 7:
+                dirs.clear()
+                continue
+            for fname in files:
+                if not _PADRAO_ARQ.match(fname):
+                    continue
+                ext = fname.rsplit('.', 1)[-1].lower()
+                dest_dir = pasta_dwg if ext == 'dwg' else pasta_zip
+                src = os.path.join(root, fname)
+                dst = os.path.join(dest_dir, fname)
+                try:
+                    shutil.copy2(src, dst)
+                    copiados.append(fname)
+                except Exception as e:
+                    erros.append(f'{fname}: {e}')
+
+    return {'copiados': copiados, 'erros': erros}
+
+
 def _processar(req_path):
     try:
         with open(req_path, 'r', encoding='utf-8') as f:
@@ -134,7 +189,17 @@ def _processar(req_path):
     status = 'OK' if ok else 'ERRO'
     _log(f'Consolidação {status} — {req_id}')
 
-    _escrever_resposta(res_path, {'ok': ok, 'arquivo': arquivo, 'output': output})
+    arqs = _copiar_arquivos_projeto(records)
+    if arqs['copiados']:
+        _log(f'Arquivos copiados: {len(arqs["copiados"])}')
+    if arqs['erros']:
+        _log(f'Erros de cópia: {arqs["erros"]}')
+
+    _escrever_resposta(res_path, {
+        'ok': ok, 'arquivo': arquivo, 'output': output,
+        'arqs_copiados': arqs['copiados'],
+        'arqs_erros': arqs['erros'],
+    })
     _remover(req_path)
 
 
