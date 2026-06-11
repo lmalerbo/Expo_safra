@@ -2364,10 +2364,10 @@ async function consolidar() {
     const fazendasUnicas = [...new Set(recsUnicos.map(r => r.fazenda))];
     _arquivosEsperados = [];
     for (const faz of fazendasUnicas) {
-      const cod = FAZENDAS[faz]?.cod;
+      const cod = String(FAZENDAS[faz]?.cod ?? '');
       for (const suf of ['Exp1L', 'Exp2L']) {
         for (const ext of ['dwg', 'zip']) {
-          _arquivosEsperados.push({ nome: `${cod}_${faz}_${suf}.${ext}`, ok: false });
+          _arquivosEsperados.push({ cod, faz, suf, ext, nome: `${cod}_*_${suf}.${ext}`, ok: false, matched: null });
         }
       }
     }
@@ -2386,7 +2386,9 @@ async function consolidar() {
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-          Selecione os ${_arquivosEsperados.length} arquivo(s) abaixo (nome exato) para liberar o envio e fechar.
+          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo para liberar o envio e fechar.
+          O nome deve seguir o padrão <code>{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}</code> — o nome da fazenda no meio
+          pode variar, o sistema identifica pelo código e pelo sufixo.
         </div>
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
           ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('')}
@@ -2468,20 +2470,27 @@ function _logArquivos(msg) {
 
 function _validarArquivosProjeto() {
   const input = document.getElementById('inputArquivosProjeto');
-  const nomes = new Set([...(input?.files || [])].map(f => f.name));
+  const files = [...(input?.files || [])];
 
   let todosOk = true;
   for (const item of _arquivosEsperados) {
-    item.ok = nomes.has(item.nome);
+    const match = files.find(f => {
+      const m = f.name.match(RE_ARQ_PROJETO);
+      return m && m[1] === item.cod && m[2].toLowerCase() === item.suf.toLowerCase() && m[3].toLowerCase() === item.ext.toLowerCase();
+    });
+    item.ok = !!match;
+    item.matched = match ? match.name : null;
     if (!item.ok) todosOk = false;
   }
   document.querySelectorAll('#checklistArquivos li').forEach(li => {
     const item = _arquivosEsperados.find(a => a.nome === li.dataset.nome);
-    li.innerHTML = `${item.ok ? '✅' : '⬜'} ${item.nome}`;
+    li.innerHTML = `${item.ok ? '✅' : '⬜'} ${item.nome}` +
+      (item.matched ? ` <span style="color:var(--muted)">→ ${item.matched}</span>` : '');
     li.style.color = item.ok ? 'var(--green)' : '';
   });
 
-  const extras = [...nomes].filter(n => !_arquivosEsperados.some(a => a.nome === n));
+  const usados = new Set(_arquivosEsperados.filter(a => a.matched).map(a => a.matched));
+  const extras = files.map(f => f.name).filter(n => !usados.has(n));
   const log = document.getElementById('uploadArquivosLog');
   if (log) {
     log.innerHTML = extras.length
@@ -2494,7 +2503,10 @@ function _validarArquivosProjeto() {
 
 async function enviarArquivosProjeto() {
   const input = document.getElementById('inputArquivosProjeto');
-  const files = [...(input?.files || [])].filter(f => _arquivosEsperados.some(a => a.nome === f.name));
+  const files = [...(input?.files || [])].filter(f => {
+    const m = f.name.match(RE_ARQ_PROJETO);
+    return m && _arquivosEsperados.some(a => a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
+  });
   const log = document.getElementById('uploadArquivosLog');
   if (log) log.innerHTML = '';
 
