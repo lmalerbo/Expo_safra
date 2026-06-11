@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 directly via the **Supabase REST API** (PostgREST), using a public `sb_publishable_...` key embedded in
 the file (security comes from RLS policies, not from hiding the key — see `supabase/migrations/0001_init.sql`).
 
-- `SUPABASE_URL` / `SUPABASE_KEY` consts near `GH_OWNER`/`GH_TOKEN`.
+- `SUPABASE_URL` / `SUPABASE_KEY` consts near `RELEASE_PROXY_URL`.
 - `carregarDadosSupabase()` (called from `window.onload`, which is now `async`) fetches `programacao`,
   `log_exportacoes` and `usuarios` and rebuilds `FAZENDAS` / `USUARIOS_HA` / `USUARIOS_CONFIG` in place.
   The values embedded as `const FAZENDAS = {...}` etc. (still injected by `atualizar_html()`, see legacy
@@ -33,8 +33,12 @@ the file (security comes from RLS policies, not from hiding the key — see `sup
   `base_icol/*.xlsm` + `base_fazendas/*.xlsx`, preserves existing STATUS/TIPO_LINHA/CICLO per LAYER, and
   upserts into the Supabase `programacao` table (needs Python + `supabase_config.json` with the secret
   key). Run via `ATUALIZAR.bat`.
-- File upload (`.dwg`/`.zip`) to GitHub Releases at the end of consolidation is unchanged — see
-  `GH_OWNER`/`GH_TOKEN`/`enviarArquivosProjeto()`.
+- File upload (`.dwg`/`.zip`) to GitHub Releases at the end of consolidation: `enviarArquivosProjeto()`
+  calls `_releaseUploadAsset()`, which posts to a **Cloudflare Worker proxy** (`RELEASE_PROXY_URL`,
+  `cloudflare-worker/release-proxy.js`). The Worker holds the GitHub PAT as a Cloudflare secret (never
+  committed) and creates/updates the release + uploads the asset. This indirection exists because
+  `formulario.html` is public (GitHub Pages) and any `github_pat_...` embedded in it gets auto-revoked
+  by GitHub's secret scanning as soon as it's pushed.
 
 Run a single test:
 ```bat
@@ -91,13 +95,12 @@ IndexedDB (`pf-config` database, `handles` store) persists `FileSystemDirectoryH
 
 ## TODO / Débito técnico conhecido
 
-- **`GH_TOKEN` exposto em `formulario.html`**: o repo agora é servido via GitHub Pages (raiz =
-  `index.html` → redireciona para `sistema_preenchimento/formulario.html`), e o repo é público — o
-  Personal Access Token usado por `enviarArquivosProjeto()`/`_ghCreateRelease`/etc. (linha ~1353) fica
-  visível a qualquer um que veja o código-fonte da página. Decisão temporária: manter assim, mas com
-  escopo do token restrito ao mínimo (somente este repo, permissão "Contents" read/write). Quando der
-  tempo, migrar para um proxy/serverless (Cloudflare Worker, Vercel/Netlify function ou GitHub Action via
-  `repository_dispatch`) que guarde o token no servidor, para o navegador nunca ter acesso a ele.
+- ~~`GH_TOKEN` exposto em `formulario.html`~~ — **resolvido**: o repo é público (GitHub Pages), e
+  qualquer `github_pat_...` embutido no HTML é detectado e revogado automaticamente pelo GitHub
+  (secret scanning), independente de "allow" no push protection. A solução foi mover o upload de
+  arquivos para um proxy (Cloudflare Worker, `cloudflare-worker/release-proxy.js`) que guarda o token
+  como secret do Cloudflare — `formulario.html` só conhece a URL pública do Worker
+  (`RELEASE_PROXY_URL`), sem nenhuma credencial.
 
 ## Key conventions
 

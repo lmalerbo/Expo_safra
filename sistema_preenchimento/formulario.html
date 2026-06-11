@@ -1345,12 +1345,9 @@ let currentNames = FAZENDA_NAMES;
 let activeFilters = new Set();
 
 // ── Upload de arquivos de projeto (.dwg/.zip) para Releases do GitHub ─────
-// Token fine-grained PAT com permissão "Contents: Read and write" SOMENTE
-// neste repositório (Lc4pr1o/Expo_safra) — escopo mínimo, revogável a
-// qualquer momento em GitHub > Settings > Developer settings > Tokens.
-const GH_OWNER = 'lmalerbo';
-const GH_REPO  = 'Expo_safra';
-const GH_TOKEN = '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';
+// Feito via proxy (Cloudflare Worker) — o token do GitHub fica guardado lá como
+// secret, nunca neste arquivo (que é público). Ver cloudflare-worker/release-proxy.js.
+const RELEASE_PROXY_URL = 'https://expo-safra-release-proxy.SEU_SUBDOMINIO.workers.dev';
 const RE_ARQ_PROJETO = /^(\d+)_.+_(Exp\d+L)\.(dwg|zip)$/i;
 
 // ── Banco de dados (Supabase) ─────────────────────────────────────────────
@@ -2417,46 +2414,12 @@ async function consolidar() {
 
 
 // ── Upload de arquivos de projeto (.dwg/.zip) para Releases do GitHub ─────
-function _ghHeaders(extra) {
-  return Object.assign({
-    'Authorization': `Bearer ${GH_TOKEN}`,
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  }, extra || {});
-}
-
-async function _ghGetRelease(tag) {
-  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/tags/${tag}`,
-    { headers: _ghHeaders() });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GET release ${tag}: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-async function _ghCreateRelease(tag, name) {
-  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases`, {
+// Via proxy (Cloudflare Worker) — ver RELEASE_PROXY_URL e cloudflare-worker/release-proxy.js.
+async function _releaseUploadAsset(tag, name, file) {
+  const url = `${RELEASE_PROXY_URL}/upload?tag=${encodeURIComponent(tag)}&name=${encodeURIComponent(name)}&filename=${encodeURIComponent(file.name)}`;
+  const res = await fetch(url, {
     method: 'POST',
-    headers: _ghHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ tag_name: tag, name, target_commitish: 'main' }),
-  });
-  if (!res.ok) throw new Error(`POST release ${tag}: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-async function _ghDeleteAsset(assetId) {
-  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${assetId}`,
-    { method: 'DELETE', headers: _ghHeaders() });
-  if (!res.ok && res.status !== 404) throw new Error(`DELETE asset ${assetId}: ${res.status} ${await res.text()}`);
-}
-
-async function _ghUploadAsset(release, file) {
-  const existente = (release.assets || []).find(a => a.name === file.name);
-  if (existente) await _ghDeleteAsset(existente.id);
-
-  const uploadUrl = release.upload_url.replace('{?name,label}', '') + `?name=${encodeURIComponent(file.name)}`;
-  const res = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: _ghHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
     body: file,
   });
   if (!res.ok) throw new Error(`upload ${file.name}: ${res.status} ${await res.text()}`);
@@ -2527,15 +2490,9 @@ async function enviarArquivosProjeto() {
   let erro = false;
   for (const [tag, grupo] of Object.entries(grupos)) {
     try {
-      _logArquivos(`Verificando release <strong>${tag}</strong>...`);
-      let release = await _ghGetRelease(tag);
-      if (!release) {
-        _logArquivos(`Criando release <strong>${tag}</strong>...`);
-        release = await _ghCreateRelease(tag, grupo.name);
-      }
       for (const file of grupo.files) {
         _logArquivos(`Enviando ${file.name}...`);
-        await _ghUploadAsset(release, file);
+        await _releaseUploadAsset(tag, grupo.name, file);
         _logArquivos(`<span style="color:var(--green)">✓ ${file.name} enviado</span>`);
       }
     } catch (e) {
