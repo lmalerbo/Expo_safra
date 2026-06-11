@@ -1617,6 +1617,7 @@ let currentFaz  = null;
 let cobertura   = 'inteira';
 let records     = [];
 let _arquivosEsperados = [];
+let _arquivosSelecionados = [];
 let _pendingReload = false;
 
 // Load today's records from localStorage
@@ -2360,6 +2361,7 @@ async function consolidar() {
     // Monta a lista de arquivos obrigatórios: 4 por fazenda (Exp1L/Exp2L × dwg/zip)
     const fazendasUnicas = [...new Set(recsUnicos.map(r => r.fazenda))];
     _arquivosEsperados = [];
+    _arquivosSelecionados = [];
     for (const faz of fazendasUnicas) {
       const cod = String(FAZENDAS[faz]?.cod ?? '');
       for (const suf of ['Exp1L', 'Exp2L']) {
@@ -2383,14 +2385,14 @@ async function consolidar() {
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo para liberar o envio e fechar.
+          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo, um de cada vez, para liberar o envio e fechar.
           O nome deve seguir o padrão <code>{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}</code> (separado por "_") —
           o nome da fazenda no meio pode variar, o sistema identifica pelo código e pelo sufixo.
         </div>
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
           ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('')}
         </ul>
-        <input type="file" id="inputArquivosProjeto" multiple accept=".dwg,.zip" onchange="_validarArquivosProjeto()">
+        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip" onchange="_adicionarArquivoProjeto(this)">
         <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarArquivos" onclick="enviarArquivosProjeto()" disabled>Enviar arquivos</button>
         <div id="uploadArquivosLog" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
       </div>`, false);
@@ -2431,13 +2433,33 @@ function _logArquivos(msg) {
   if (el) el.insertAdjacentHTML('beforeend', `<div>${msg}</div>`);
 }
 
-function _validarArquivosProjeto() {
-  const input = document.getElementById('inputArquivosProjeto');
-  const files = [...(input?.files || [])];
+function _adicionarArquivoProjeto(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
 
+  const m = file.name.match(RE_ARQ_PROJETO);
+  const item = m && _arquivosEsperados.find(a =>
+    a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
+
+  if (!item) {
+    _logArquivos(`<span style="color:var(--red)">Arquivo fora do padrão esperado (ignorado): ${file.name}</span>`);
+    return;
+  }
+
+  // Substitui o arquivo anterior do mesmo item, se houver
+  _arquivosSelecionados = _arquivosSelecionados.filter(f => {
+    const mm = f.name.match(RE_ARQ_PROJETO);
+    return !(mm[1] === item.cod && mm[2].toLowerCase() === item.suf.toLowerCase() && mm[3].toLowerCase() === item.ext.toLowerCase());
+  });
+  _arquivosSelecionados.push(file);
+  _validarArquivosProjeto();
+}
+
+function _validarArquivosProjeto() {
   let todosOk = true;
   for (const item of _arquivosEsperados) {
-    const match = files.find(f => {
+    const match = _arquivosSelecionados.find(f => {
       const m = f.name.match(RE_ARQ_PROJETO);
       return m && m[1] === item.cod && m[2].toLowerCase() === item.suf.toLowerCase() && m[3].toLowerCase() === item.ext.toLowerCase();
     });
@@ -2452,24 +2474,11 @@ function _validarArquivosProjeto() {
     li.style.color = item.ok ? 'var(--green)' : '';
   });
 
-  const usados = new Set(_arquivosEsperados.filter(a => a.matched).map(a => a.matched));
-  const extras = files.map(f => f.name).filter(n => !usados.has(n));
-  const log = document.getElementById('uploadArquivosLog');
-  if (log) {
-    log.innerHTML = extras.length
-      ? `<span style="color:var(--red)">Arquivo(s) fora do padrão esperado (ignorados): ${extras.join(', ')}</span>`
-      : '';
-  }
-
   document.getElementById('btnEnviarArquivos').disabled = !todosOk;
 }
 
 async function enviarArquivosProjeto() {
-  const input = document.getElementById('inputArquivosProjeto');
-  const files = [...(input?.files || [])].filter(f => {
-    const m = f.name.match(RE_ARQ_PROJETO);
-    return m && _arquivosEsperados.some(a => a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
-  });
+  const files = _arquivosSelecionados;
   const log = document.getElementById('uploadArquivosLog');
   if (log) log.innerHTML = '';
 
