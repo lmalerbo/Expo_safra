@@ -71,18 +71,11 @@ export default {
             { method: 'DELETE', headers: ghHeaders(env) });
         }
 
-        // Encaminha o corpo da requisição em streaming (sem bufferizar o arquivo inteiro
-        // em memória), necessário para arquivos grandes (.dwg/.zip podem passar de 10-50MB).
-        const uploadHeaders = ghHeaders(env, { 'Content-Type': request.headers.get('Content-Type') || 'application/octet-stream' });
-        const contentLength = request.headers.get('Content-Length');
-        if (contentLength) uploadHeaders['Content-Length'] = contentLength;
-
         const uploadUrl = release.upload_url.replace('{?name,label}', '') + `?name=${encodeURIComponent(filename)}`;
         const res = await fetch(uploadUrl, {
           method: 'POST',
-          headers: uploadHeaders,
-          body: request.body,
-          duplex: 'half',
+          headers: ghHeaders(env, { 'Content-Type': request.headers.get('Content-Type') || 'application/octet-stream' }),
+          body: await request.arrayBuffer(),
         });
         if (!res.ok) throw new Error(`upload ${filename}: ${res.status} ${await res.text()}`);
 

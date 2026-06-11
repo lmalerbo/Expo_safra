@@ -2476,14 +2476,14 @@ async function enviarArquivosProjeto() {
   const btn = document.getElementById('btnEnviarArquivos');
   btn.disabled = true;
 
-  // Agrupa arquivos por (codFaz, expNL) → release
+  // Agrupa arquivos por codFaz → release (um release por fazenda, com todas as frentes)
   const grupos = {};
   for (const file of files) {
     const m = file.name.match(RE_ARQ_PROJETO);
     if (!m) continue;
-    const [, codFaz, expNL] = m;
-    const tag = `${codFaz}-${expNL.toLowerCase()}`;
-    const name = `${codFaz}_${expNL}`;
+    const [, codFaz] = m;
+    const tag = codFaz;
+    const name = codFaz;
     (grupos[tag] ||= { name, files: [] }).files.push(file);
   }
 
