@@ -35,17 +35,10 @@ if %xlsm_found%==0 (
     exit /b 1
 )
 
-if not exist "programacao_frentes.xlsx" (
+if not exist "supabase_config.json" (
     color 0C
-    echo  ERRO: programacao_frentes.xlsx nao encontrado.
-    echo.
-    pause
-    exit /b 1
-)
-
-if not exist "formulario.html" (
-    color 0C
-    echo  ERRO: formulario.html nao encontrado.
+    echo  ERRO: supabase_config.json nao encontrado.
+    echo  Crie esse arquivo com: { "url": "https://xxxx.supabase.co", "secret_key": "sb_secret_..." }
     echo.
     pause
     exit /b 1

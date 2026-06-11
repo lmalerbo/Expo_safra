@@ -13,3 +13,8 @@ programacao_frentes.xlsx
 # Bases de dados de entrada (grandes, atualizadas fora do git)
 base_icol/*.xlsm
 base_fazendas/*.xls*
+
+# Credenciais/config local do Supabase
+supabase_config.json
+supabase/.temp
+supabase/.branches

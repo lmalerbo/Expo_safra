@@ -2,7 +2,49 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Running the system
+## Current architecture (Supabase)
+
+`formulario.html` is now a fully online, self-contained HTML file: it reads and writes the "database"
+directly via the **Supabase REST API** (PostgREST), using a public `sb_publishable_...` key embedded in
+the file (security comes from RLS policies, not from hiding the key — see `supabase/migrations/0001_init.sql`).
+
+- `SUPABASE_URL` / `SUPABASE_KEY` consts near `GH_OWNER`/`GH_TOKEN`.
+- `carregarDadosSupabase()` (called from `window.onload`, which is now `async`) fetches `programacao`,
+  `log_exportacoes` and `usuarios` and rebuilds `FAZENDAS` / `USUARIOS_HA` / `USUARIOS_CONFIG` in place.
+  The values embedded as `const FAZENDAS = {...}` etc. (still injected by `atualizar_html()`, see legacy
+  section below) are kept only as a **seed/fallback** in case the Supabase request fails.
+- `consolidar()` writes directly to Supabase: `PATCH /rest/v1/programacao` (per LAYER), bulk
+  `POST /rest/v1/log_exportacoes`, and `PATCH /rest/v1/usuarios` to update the user's accumulated `ha`.
+  No file queue, no local Python process required.
+- Tables and RLS policies: `supabase/migrations/0001_init.sql` (+ `0002_programacao_insert_anon.sql`,
+  which lets `anon` `INSERT` into `programacao` so the browser-based base update can upsert new LAYERs).
+  Apply with `supabase link --project-ref wewicqysphguehqnyjdh` + `supabase db push`.
+- One-time data migration from the old `programacao_frentes.xlsx`: `engine/migrar_supabase.py` (needs
+  `supabase_config.json`, gitignored, with `{ "url": ..., "secret_key": "sb_secret_..." }`).
+- Refreshing the ICOL base — **primary path**: in `formulario.html`, "⚙ Gerenciar" → "Atualizar base
+  ICOL / Fazendas" lets the user upload the `.xlsm` (ICOL, sheet `BASE PARA PLANEJAMENTO`) and `.xlsx`
+  (base de fazendas) files directly in the browser. `processarAtualizacaoBase()` parses both with SheetJS
+  (already loaded for `_exportarXLSX`), replicates the merge/preserve logic of
+  `engine/atualizar_programacao.py` in JS, and upserts straight into `programacao` via the publishable
+  key (needs the `programacao_insert_anon` policy from `supabase/migrations/0002_*.sql`). "ⓘ" buttons
+  next to each file input explain the expected layout and offer a downloadable example via
+  `_baixarModeloICOL()` / `_baixarModeloBaseFazendas()`.
+- Refreshing the ICOL base — **legacy/local fallback**: `engine/atualizar_programacao.py` reads
+  `base_icol/*.xlsm` + `base_fazendas/*.xlsx`, preserves existing STATUS/TIPO_LINHA/CICLO per LAYER, and
+  upserts into the Supabase `programacao` table (needs Python + `supabase_config.json` with the secret
+  key). Run via `ATUALIZAR.bat`.
+- File upload (`.dwg`/`.zip`) to GitHub Releases at the end of consolidation is unchanged — see
+  `GH_OWNER`/`GH_TOKEN`/`enviarArquivosProjeto()`.
+
+Run a single test:
+```bat
+python -m pytest tests/test_utils.py -v
+```
+
+## Legacy: file-queue architecture (`vigia.py` / Excel)
+
+> Kept for now as a fallback/reference. Not part of the daily flow anymore — `formulario.html` no longer
+> writes to `consolidar_queue/` or depends on `vigia.py` being online.
 
 ```bat
 # Start the background watcher (runs 24h on the server PC)
@@ -11,54 +53,41 @@ INICIAR_VIGIA.bat         # launches vigia.py via pythonw (no console window)
 # Manually trigger consolidation (outside the browser flow)
 CONSOLIDAR.bat            # runs engine/consolidar.py interactively
 
-# Update farm/user data embedded in formulario.html
-ATUALIZAR.bat             # runs engine/atualizar_programacao.py
+# Update farm/user data embedded in formulario.html (legacy const seed)
+ATUALIZAR.bat             # runs the legacy engine/atualizar_programacao.py flow
 ```
 
-> `vigia.py` also triggers `engine/consolidar.py` automatically after each browser request, so `CONSOLIDAR.bat` is rarely needed manually.
->
-> `ATUALIZAR.bat` is also rarely needed manually — `engine/consolidar.py` calls `atualizar_html()` at the end of every consolidation run.
+The legacy system has two loosely-coupled halves that communicate only through JSON files on a shared G: drive.
 
-Run a single test:
-```bat
-python -m pytest tests/test_utils.py -v
-```
+### Browser half (`formulario.html`, legacy bits)
 
-## Architecture
-
-The system has two loosely-coupled halves that communicate only through JSON files on a shared G: drive.
-
-### Browser half (`formulario.html`)
-A single self-contained HTML file with no build step. All JS is inline. Users open it directly in Chrome. Key responsibilities:
-- Field registration UI (layers, fazendas, talhões, areas)
-- Tabs: Registros, Consultas, Dashboards
-- On "Consolidar": writes `consolidar_queue/req_{id}.json`, polls for `res_{id}.json`, then deletes it
-- File copy feature: uses File System Access API to scan `FAZENDAS\` for `.dwg`/`.zip` and copy to SharePoint folders, running in parallel with Python via `Promise.all`
-
-Static data (`FAZENDAS`, `USUARIOS_HA`, `USUARIOS_CONFIG`) is embedded directly in the HTML as JS `const` assignments — injected/updated by `engine/utils.py:atualizar_html()` using line-prefix markers.
+- Old "Consolidar" flow wrote `consolidar_queue/req_{id}.json`, polled for `res_{id}.json`, then deleted it.
+- Static data (`FAZENDAS`, `USUARIOS_HA`, `USUARIOS_CONFIG`) embedded directly in the HTML as JS values —
+  injected/updated by `engine/utils.py:atualizar_html()` using line-prefix markers. Now only a fallback seed.
+- File copy feature: uses File System Access API to scan `FAZENDAS\` for `.dwg`/`.zip` and copy to SharePoint folders.
 
 IndexedDB (`pf-config` database, `handles` store) persists `FileSystemDirectoryHandle` objects for:
-- `queueDir` — `consolidar_queue/` folder
+
 - `filesRootDir` — FAZENDAS root for project file scan
 - `filesDwgDir` — SharePoint destination for `.dwg`
 - `filesExpDir` — SharePoint destination for `.zip`
 
 ### Python half (`vigia.py` + `engine/`)
+
 `vigia.py` polls `consolidar_queue/` every 2s (configurable). On finding `req_{id}.json`:
+
 1. Saves records to `exports/export_frentes_{user}_{date}_{id}.xlsx`
-2. Runs `engine/consolidar.py` (which updates `programacao_frentes.xlsx` and regenerates `formulario.html`)
+2. Runs `engine/consolidar.py` (which updated `programacao_frentes.xlsx` and regenerated `formulario.html`)
 3. Writes `res_{id}.json` with `{ok, arquivo, output}`
 
 `engine/consolidar.py` — matches export rows to the master spreadsheet by LAYER string, overwrites STATUS/TIPO_LINHA/CICLO columns, moves processed exports to `exports/processados/`, then calls `atualizar_html()`.
 
-`engine/atualizar_programacao.py` — reads `programacao_frentes.xlsx` and `base_fazendas/base.xlsx` to rebuild the fazendas/talhões data, then calls `atualizar_html()`.
-
-`engine/utils.py` — shared helpers: `layer_to_str()`, `arquivo_bloqueado()`, `aguardar_arquivo_livre()`, `atualizar_html()`, stdout tee logging.
+`engine/utils.py` — shared helpers: `layer_to_str()`, `arquivo_bloqueado()`, `aguardar_arquivo_livre()`, `atualizar_html()`, stdout tee logging. `layer_to_str()` and `redirecionar_stdout`/`fechar_log` are still used by the Supabase scripts.
 
 ### Configuration
-`config.json` — tuning knobs: poll interval, consolidation timeout, retry settings, column index map for the master spreadsheet.
+`config.json` — tuning knobs: poll interval, consolidation timeout, retry settings, column index map for the master spreadsheet (still used by the legacy `consolidar.py`).
 
-`usuarios.json` — user list with `preenchimento` (can register + consolidate) or `dashboard` (read-only) profiles.
+`usuarios.json` — seed user list with `preenchimento`/`dashboard` profiles, used only by `engine/migrar_supabase.py` for the initial migration. The live source of truth is the Supabase `usuarios` table.
 
 ## Key conventions
 
