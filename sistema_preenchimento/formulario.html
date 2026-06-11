@@ -1347,7 +1347,7 @@ let activeFilters = new Set();
 // ── Upload de arquivos de projeto (.dwg/.zip) para Releases do GitHub ─────
 // Feito via proxy (Cloudflare Worker) — o token do GitHub fica guardado lá como
 // secret, nunca neste arquivo (que é público). Ver cloudflare-worker/release-proxy.js.
-const RELEASE_PROXY_URL = 'https://expo-safra-release-proxy.SEU_SUBDOMINIO.workers.dev';
+const RELEASE_PROXY_URL = 'https://expo-safra-release-proxy.leonardo-malerbo.workers.dev';
 const RE_ARQ_PROJETO = /^(\d+)_.+_(Exp\d+L)\.(dwg|zip)$/i;
 
 // ── Banco de dados (Supabase) ─────────────────────────────────────────────
