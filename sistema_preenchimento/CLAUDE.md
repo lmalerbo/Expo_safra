@@ -89,6 +89,16 @@ IndexedDB (`pf-config` database, `handles` store) persists `FileSystemDirectoryH
 
 `usuarios.json` — seed user list with `preenchimento`/`dashboard` profiles, used only by `engine/migrar_supabase.py` for the initial migration. The live source of truth is the Supabase `usuarios` table.
 
+## TODO / Débito técnico conhecido
+
+- **`GH_TOKEN` exposto em `formulario.html`**: o repo agora é servido via GitHub Pages (raiz =
+  `index.html` → redireciona para `sistema_preenchimento/formulario.html`), e o repo é público — o
+  Personal Access Token usado por `enviarArquivosProjeto()`/`_ghCreateRelease`/etc. (linha ~1353) fica
+  visível a qualquer um que veja o código-fonte da página. Decisão temporária: manter assim, mas com
+  escopo do token restrito ao mínimo (somente este repo, permissão "Contents" read/write). Quando der
+  tempo, migrar para um proxy/serverless (Cloudflare Worker, Vercel/Netlify function ou GitHub Action via
+  `repository_dispatch`) que guarde o token no servidor, para o navegador nunca ter acesso a ele.
+
 ## Key conventions
 
 **File naming for project files:**
