@@ -1351,7 +1351,7 @@ let activeFilters = new Set();
 const GH_OWNER = 'lmalerbo';
 const GH_REPO  = 'Expo_safra';
 const GH_TOKEN = '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';
-const RE_ARQ_PROJETO = /^(\d+)[ _].+[ _](Exp\d+L)\.(dwg|zip)$/i;
+const RE_ARQ_PROJETO = /^(\d+)_.+_(Exp\d+L)\.(dwg|zip)$/i;
 
 // ── Banco de dados (Supabase) ─────────────────────────────────────────────
 // Publishable key — feita para ser pública; segurança vem das policies de RLS.
@@ -2387,8 +2387,8 @@ async function consolidar() {
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
           Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo para liberar o envio e fechar.
-          O nome deve seguir o padrão <code>{COD_FAZ} {NOME} {Exp1L|Exp2L}.{dwg|zip}</code> (separados por espaço ou
-          "_") — o nome da fazenda no meio pode variar, o sistema identifica pelo código e pelo sufixo.
+          O nome deve seguir o padrão <code>{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}</code> (separado por "_") —
+          o nome da fazenda no meio pode variar, o sistema identifica pelo código e pelo sufixo.
         </div>
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
           ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('')}
