@@ -2385,14 +2385,14 @@ async function consolidar() {
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo, um de cada vez, para liberar o envio e fechar.
+          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo (pode selecionar vários de uma vez), para liberar o envio e fechar.
           O nome deve seguir o padrão <code>{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}</code> (separado por "_") —
           o nome da fazenda no meio pode variar, o sistema identifica pelo código e pelo sufixo.
         </div>
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
           ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('')}
         </ul>
-        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip" onchange="_adicionarArquivoProjeto(this)">
+        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip" multiple onchange="_adicionarArquivoProjeto(this)">
         <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarArquivos" onclick="enviarArquivosProjeto()" disabled>Enviar arquivos</button>
         <div id="uploadArquivosLog" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
       </div>`, false);
@@ -2434,25 +2434,27 @@ function _logArquivos(msg) {
 }
 
 function _adicionarArquivoProjeto(input) {
-  const file = input.files[0];
+  const files = [...input.files];
   input.value = '';
-  if (!file) return;
+  if (!files.length) return;
 
-  const m = file.name.match(RE_ARQ_PROJETO);
-  const item = m && _arquivosEsperados.find(a =>
-    a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
+  for (const file of files) {
+    const m = file.name.match(RE_ARQ_PROJETO);
+    const item = m && _arquivosEsperados.find(a =>
+      a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
 
-  if (!item) {
-    _logArquivos(`<span style="color:var(--red)">Arquivo fora do padrão esperado (ignorado): ${file.name}</span>`);
-    return;
+    if (!item) {
+      _logArquivos(`<span style="color:var(--red)">Arquivo fora do padrão esperado (ignorado): ${file.name}</span>`);
+      continue;
+    }
+
+    // Substitui o arquivo anterior do mesmo item, se houver
+    _arquivosSelecionados = _arquivosSelecionados.filter(f => {
+      const mm = f.name.match(RE_ARQ_PROJETO);
+      return !(mm[1] === item.cod && mm[2].toLowerCase() === item.suf.toLowerCase() && mm[3].toLowerCase() === item.ext.toLowerCase());
+    });
+    _arquivosSelecionados.push(file);
   }
-
-  // Substitui o arquivo anterior do mesmo item, se houver
-  _arquivosSelecionados = _arquivosSelecionados.filter(f => {
-    const mm = f.name.match(RE_ARQ_PROJETO);
-    return !(mm[1] === item.cod && mm[2].toLowerCase() === item.suf.toLowerCase() && mm[3].toLowerCase() === item.ext.toLowerCase());
-  });
-  _arquivosSelecionados.push(file);
   _validarArquivosProjeto();
 }
 
