@@ -1,4 +1,4 @@
-// Proxy para upload de arquivos de projeto (.dwg/.zip) nas Releases do GitHub.
+﻿// Proxy para upload de arquivos de projeto (.dwg/.zip) nas Releases do GitHub.
 //
 // Motivo: o formulario.html é estático e público (GitHub Pages) — qualquer token do GitHub
 // embutido nele é detectado e revogado automaticamente pelo secret scanning. Este Worker
@@ -13,7 +13,7 @@
 //      RELEASE_PROXY_URL no formulario.html com esse valor.
 
 const GH_OWNER = 'lmalerbo';
-const GH_REPO = 'Expo_safra';
+const GH_REPO = 'project-colheita';
 const ALLOWED_ORIGIN = 'https://lmalerbo.github.io';
 
 function corsHeaders() {
@@ -29,7 +29,7 @@ function ghHeaders(env, extra) {
     'Authorization': `Bearer ${env.GH_TOKEN}`,
     'Accept': 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'expo-safra-release-proxy',
+    'User-Agent': 'project-colheita-release-proxy',
   }, extra || {});
 }
 
