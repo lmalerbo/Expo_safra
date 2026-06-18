@@ -1413,19 +1413,34 @@ async function carregarDadosSupabase() {
     if (!programacao.length) return;
 
     for (const k of Object.keys(FAZENDAS)) delete FAZENDAS[k];
+
+    // Duas fazendas distintas podem ter o mesmo nome com cod_faz diferente
+    // (ex: SAO LOURENCO 10531 e 10805) — sem isso, talhões com o mesmo número
+    // se sobrescreveriam silenciosamente ao agrupar só pelo nome.
+    const codsPorNome = new Map();
+    for (const row of programacao) {
+      if (!row.fazenda) continue;
+      if (!codsPorNome.has(row.fazenda)) codsPorNome.set(row.fazenda, new Set());
+      codsPorNome.get(row.fazenda).add(row.cod_faz);
+    }
+    function nomeFazendaEfetivo(row) {
+      return codsPorNome.get(row.fazenda).size > 1 ? `${row.fazenda} (${row.cod_faz})` : row.fazenda;
+    }
+
     const layerHa = {};
     const layerTal = {};
     for (const row of programacao) {
       const faz = row.fazenda;
       if (!faz) continue;
-      if (!FAZENDAS[faz]) FAZENDAS[faz] = { cod: row.cod_faz, talhoes: {} };
+      const fazKey = nomeFazendaEfetivo(row);
+      if (!FAZENDAS[fazKey]) FAZENDAS[fazKey] = { cod: row.cod_faz, talhoes: {} };
       const td = {
         layer: row.layer, frente: row.frente, semana: row.periodo_op,
         exp: row.status || '', tipo: row.tipo_linha || '', ciclo: row.ciclo || '',
         ha: row.area_ha || 0, dia: null, estagio: row.estagio || '',
         usuario: '', data_consolidacao: null
       };
-      FAZENDAS[faz].talhoes[String(row.talhao)] = td;
+      FAZENDAS[fazKey].talhoes[String(row.talhao)] = td;
       layerHa[String(row.layer)] = row.area_ha || 0;
       layerTal[String(row.layer)] = td;
     }
@@ -2918,6 +2933,7 @@ function renderPlano() {
 }
 
 function goToFazenda(name) {
+  if (!FAZENDAS[name]) { showToast(`"${name}" não foi encontrada (nome pode ter mudado).`); return; }
   setView('preenchimento');
   selectFazenda(name);
 }
