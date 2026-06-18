@@ -3002,6 +3002,13 @@ function matchUsuarioFiltro(t, filtUsuario) {
   if (filtUsuario === CONSULTA_SEM_USUARIO) return !t.usuario;
   return t.usuario === filtUsuario;
 }
+// Um talhão só passa se atender TODOS os filtros simultaneamente (não cada um isoladamente)
+function talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario) {
+  return (!filtMes    || talYM(t) === filtMes) &&
+         (!filtFrente || String(t.frente) === filtFrente) &&
+         (!filtCiclo  || t.ciclo === filtCiclo) &&
+         matchUsuarioFiltro(t, filtUsuario);
+}
 let _consultaDebounceTimer = null;
 function debouncedRenderConsulta() {
   clearTimeout(_consultaDebounceTimer);
@@ -3128,14 +3135,8 @@ function renderConsulta(page) {
     ? FAZENDA_NAMES.filter(n => n.toLowerCase().includes(q) || String(FAZENDAS[n].cod).includes(q))
     : FAZENDA_NAMES;
 
-  if (filtFrente) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => String(t.frente) === filtFrente));
-  if (filtMes) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => talYM(t) === filtMes));
-  if (filtCiclo) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => t.ciclo === filtCiclo));
-  if (filtUsuario) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => matchUsuarioFiltro(t, filtUsuario)));
+  if (filtMes || filtFrente || filtCiclo || filtUsuario) names = names.filter(n =>
+    Object.values(FAZENDAS[n].talhoes).some(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario)));
   if (filtStatus) names = names.filter(n => getFazStatus(n).status === filtStatus);
 
   _consultaNames = names;
@@ -3156,12 +3157,7 @@ function renderConsulta(page) {
   const rows = pageNames.map(name => {
     const d = FAZENDAS[name];
     const allTals = Object.values(d.talhoes);
-    const tals = allTals.filter(t =>
-      (!filtMes    || talYM(t) === filtMes) &&
-      (!filtFrente || String(t.frente) === filtFrente) &&
-      (!filtCiclo  || t.ciclo === filtCiclo) &&
-      matchUsuarioFiltro(t, filtUsuario)
-    );
+    const tals = allTals.filter(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario));
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
     const { status, cls, ciclo } = getFazStatus(name);
@@ -3231,13 +3227,8 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
   icon.textContent = '▼';
 
   const allTals = FAZENDAS[name].talhoes;
-  const sorted = Object.keys(allTals).sort((a, b) => +a - +b).filter(t => {
-    const td = allTals[t];
-    return (!filtMesArg    || talYM(td) === filtMesArg) &&
-           (!filtFrenteArg || String(td.frente) === filtFrenteArg) &&
-           (!filtCicloArg  || td.ciclo === filtCicloArg) &&
-           matchUsuarioFiltro(td, filtUsuarioArg);
-  });
+  const sorted = Object.keys(allTals).sort((a, b) => +a - +b)
+    .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg));
   const talRows = sorted.map(t => {
     const td = allTals[t];
     const stCls = isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
