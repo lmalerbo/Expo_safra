@@ -1174,6 +1174,9 @@
       <select id="cFiltroFrente" class="mes-filter-select" onchange="renderConsulta()">
         <option value="">— todas as frentes —</option>
       </select>
+      <select id="cFiltroUsuario" class="mes-filter-select" onchange="renderConsulta()">
+        <option value="">— todos os usuários —</option>
+      </select>
       <select id="cFiltroStatus" class="mes-filter-select" onchange="renderConsulta()">
         <option value="">— todos os status —</option>
         <option value="A FAZER">A Fazer</option>
@@ -2996,12 +2999,13 @@ function debouncedRenderConsulta() {
   _consultaDebounceTimer = setTimeout(renderConsulta, 200);
 }
 function populateConsultaFilters() {
-  const meses = new Set(), frentes = new Set();
+  const meses = new Set(), frentes = new Set(), usuarios = new Set();
   FAZENDA_NAMES.forEach(n => {
     Object.values(FAZENDAS[n].talhoes).forEach(t => {
       const ym = talYM(t);
       if (ym) meses.add(ym);
       if (t.frente) frentes.add(t.frente);
+      if (t.usuario) usuarios.add(t.usuario);
     });
   });
   const selMes = document.getElementById('cFiltroMes');
@@ -3019,12 +3023,19 @@ function populateConsultaFilters() {
   selFre.innerHTML = '<option value="">— todas as frentes —</option>' +
     [...frentes].sort((a,b)=>a-b).map(f => `<option value="${f}">Frente ${f}</option>`).join('');
   selFre.value = curFre;
+
+  const selUsu = document.getElementById('cFiltroUsuario');
+  const curUsu = selUsu.value;
+  selUsu.innerHTML = '<option value="">— todos os usuários —</option>' +
+    [...usuarios].sort().map(u => `<option value="${u}">${u}</option>`).join('');
+  selUsu.value = curUsu;
 }
 
 function limparFiltrosConsulta() {
-  document.getElementById('cFiltroMes').value    = '';
-  document.getElementById('cFiltroFrente').value = '';
-  document.getElementById('cFiltroStatus').value = '';
+  document.getElementById('cFiltroMes').value     = '';
+  document.getElementById('cFiltroFrente').value  = '';
+  document.getElementById('cFiltroUsuario').value = '';
+  document.getElementById('cFiltroStatus').value  = '';
   renderConsulta();
 }
 
@@ -3083,12 +3094,14 @@ function renderConsulta(page) {
   else { _consultaPage = page; }
 
   const q          = (document.getElementById('consultaSearch')?.value || '').toLowerCase();
-  const filtMes    = document.getElementById('cFiltroMes')?.value    || '';
-  const filtFrente = document.getElementById('cFiltroFrente')?.value || '';
-  const filtStatus = document.getElementById('cFiltroStatus')?.value || '';
+  const filtMes    = document.getElementById('cFiltroMes')?.value     || '';
+  const filtFrente = document.getElementById('cFiltroFrente')?.value  || '';
+  const filtUsuario= document.getElementById('cFiltroUsuario')?.value || '';
+  const filtStatus = document.getElementById('cFiltroStatus')?.value  || '';
 
   document.getElementById('cFiltroMes').classList.toggle('active', !!filtMes);
   document.getElementById('cFiltroFrente').classList.toggle('active', !!filtFrente);
+  document.getElementById('cFiltroUsuario').classList.toggle('active', !!filtUsuario);
   document.getElementById('cFiltroStatus').classList.toggle('active', !!filtStatus);
 
   let names = q
@@ -3099,6 +3112,8 @@ function renderConsulta(page) {
     Object.values(FAZENDAS[n].talhoes).some(t => String(t.frente) === filtFrente));
   if (filtMes) names = names.filter(n =>
     Object.values(FAZENDAS[n].talhoes).some(t => talYM(t) === filtMes));
+  if (filtUsuario) names = names.filter(n =>
+    Object.values(FAZENDAS[n].talhoes).some(t => t.usuario === filtUsuario));
   if (filtStatus) names = names.filter(n => getFazStatus(n).status === filtStatus);
 
   _consultaNames = names;
@@ -3120,8 +3135,9 @@ function renderConsulta(page) {
     const d = FAZENDAS[name];
     const allTals = Object.values(d.talhoes);
     const tals = allTals.filter(t =>
-      (!filtMes    || talYM(t) === filtMes) &&
-      (!filtFrente || String(t.frente) === filtFrente)
+      (!filtMes     || talYM(t) === filtMes) &&
+      (!filtFrente  || String(t.frente) === filtFrente) &&
+      (!filtUsuario || t.usuario === filtUsuario)
     );
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
@@ -3129,10 +3145,11 @@ function renderConsulta(page) {
     const frentes = [...new Set(tals.map(t => t.frente).filter(Boolean))].sort((a,b)=>a-b).join(', ') || '—';
     const haTotal = tals.reduce((s, t) => s + (t.ha || 0), 0);
     const escName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const escUsu  = filtUsuario.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const cbTd = _consultaSelectMode
       ? `<td class="consulta-cb" onclick="event.stopPropagation()"><input type="checkbox" ${_consultaSelected.has(name) ? 'checked' : ''} onclick="toggleConsultaSel('${escName}',this)"></td>`
       : '';
-    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
+    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}','${escUsu}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
       ${cbTd}
       <td><span class="consulta-expand-icon" id="cfi-${CSS.escape(name)}">▶</span><strong>${name}</strong></td>
       <td style="font-family:monospace">${d.cod}</td>
@@ -3169,7 +3186,7 @@ function renderConsulta(page) {
   </div>`;
 }
 
-function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg) {
+function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtUsuarioArg) {
   const esc = CSS.escape(name);
   const detailRow = document.getElementById('cdr-' + esc);
   const inner     = document.getElementById('cdinner-' + esc);
@@ -3193,8 +3210,9 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg) {
   const allTals = FAZENDAS[name].talhoes;
   const sorted = Object.keys(allTals).sort((a, b) => +a - +b).filter(t => {
     const td = allTals[t];
-    return (!filtMesArg    || talYM(td) === filtMesArg) &&
-           (!filtFrenteArg || String(td.frente) === filtFrenteArg);
+    return (!filtMesArg     || talYM(td) === filtMesArg) &&
+           (!filtFrenteArg  || String(td.frente) === filtFrenteArg) &&
+           (!filtUsuarioArg || td.usuario === filtUsuarioArg);
   });
   const talRows = sorted.map(t => {
     const td = allTals[t];
