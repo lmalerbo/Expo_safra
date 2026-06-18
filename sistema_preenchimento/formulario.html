@@ -829,6 +829,7 @@
   .faz-tag-accent { background: rgba(200,150,12,.15);  color: var(--accent); }
   .faz-tag-blue   { background: rgba(90,159,212,.15);  color: var(--blue);   }
   .faz-tag-muted  { background: rgba(122,136,117,.15); color: var(--muted);  }
+  .faz-tag-red    { background: rgba(217,92,92,.15);   color: var(--red);    }
 
   /* ── Dashboard ── */
   .dash-page {
@@ -1768,6 +1769,14 @@ function is18m(estagio) {
          e.includes('FORMA') || e === 'ANO';
 }
 
+// Ciclo de safra: abril de um ano até março do ano seguinte (ex: "26-27" = abr/2026 a mar/2027)
+function getCicloAtual() {
+  const anoInicio = (_mesAtual + 1) >= 4 ? _anoAtual : _anoAtual - 1;
+  const yy1 = String(anoInicio % 100).padStart(2, '0');
+  const yy2 = String((anoInicio + 1) % 100).padStart(2, '0');
+  return `${yy1}-${yy2}`;
+}
+
 // Converte período de colheita (1-12) → "YYYY-MM" (todos no ano atual)
 function semanaToYM(semana) {
   if (!semana) return null;
@@ -2273,7 +2282,7 @@ function updateStats() {
     const totalTal = FAZENDA_NAMES.reduce((s, n) => s + Object.keys(FAZENDAS[n].talhoes).length, 0);
     const conclFaz = FAZENDA_NAMES.filter(n => {
       const tals = Object.values(FAZENDAS[n].talhoes);
-      return tals.length > 0 && tals.every(t => t.exp === 'CONCLUIDO' || t.exp === 'SEM LINHAS');
+      return tals.length > 0 && tals.every(isTalDone);
     }).length;
     const pct = totalFaz > 0 ? Math.round(conclFaz / totalFaz * 100) : 0;
 
@@ -2851,7 +2860,7 @@ function getFazStatus(name) {
   const tals = Object.values(FAZENDAS[name]?.talhoes || {});
   if (!tals.length) return { status: '—', cls: 'muted', ciclo: '—' };
   const total  = tals.length;
-  const done   = tals.filter(t => t.exp === 'CONCLUIDO' || t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS').length;
+  const done   = tals.filter(isTalDone).length;
   const ciclo  = tals.find(t => t.ciclo)?.ciclo || '—';
   let status, cls;
   if (done === total)  { status = 'CONCLUÍDO'; cls = 'green'; }
@@ -3275,8 +3284,10 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
     .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg));
   const talRows = sorted.map(t => {
     const td = allTals[t];
-    const stCls = isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
-    const stLbl = td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
+    const refazer18m = !isTalDone(td) && td.exp === 'CONCLUIDO';
+    const stCls = refazer18m ? 'red' : isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
+    const stLbl = refazer18m ? 'Refazer (18m)'
+      : td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
     const _ym   = talYM(td);
     const data  = _ym ? _ym.split('-').reverse().join('/') : '—';
     const quando = td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '—';
@@ -3319,6 +3330,9 @@ function getThemeColors() {
 }
 
 function isTalDone(t) {
+  // Talhão 18m no ciclo atual sempre precisa ser refeito, mesmo que já tenha
+  // sido concluído (a marcação antiga é de um ciclo anterior).
+  if (is18m(t.estagio) && t.ciclo === getCicloAtual()) return false;
   return t.exp === 'CONCLUIDO' || t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS';
 }
 
