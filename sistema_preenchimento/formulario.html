@@ -296,6 +296,17 @@
     color: var(--accent);
   }
   .tal-chip.disabled { opacity: .25; cursor: default; pointer-events: none; }
+  .tal-chip.tal-restante:not(.selected) {
+    border-color: #9B6BCE;
+    color: #9B6BCE;
+    background: rgba(155,107,206,.12);
+  }
+  .tal-pendentes-banner {
+    display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    background: rgba(155,107,206,.10); border: 1px solid #9B6BCE; border-radius: 6px;
+    padding: 7px 12px; margin-bottom: 10px; font-size: 12px; color: #9B6BCE;
+  }
+  .tal-pendentes-banner .link-btn { color: #9B6BCE; white-space: nowrap; }
   .tal-chip.mes-atual {
     border-color: var(--green);
     color: var(--text);
@@ -1074,6 +1085,10 @@
                 <button class="link-btn" onclick="clearAllTal()">limpar</button>
               </div>
             </div>
+            <div class="tal-pendentes-banner" id="talPendentesBanner" style="display:none">
+              <span id="talPendentesMsg"></span>
+              <button class="link-btn" onclick="selecionarRestantesPendentes()">Selecionar restantes</button>
+            </div>
             <div class="talhoes-grid" id="talhoesGrid"></div>
           </div>
 
@@ -1394,20 +1409,29 @@ async function carregarDadosSupabase() {
 
     for (const k of Object.keys(FAZENDAS)) delete FAZENDAS[k];
     const layerHa = {};
+    const layerTal = {};
     for (const row of programacao) {
       const faz = row.fazenda;
       if (!faz) continue;
       if (!FAZENDAS[faz]) FAZENDAS[faz] = { cod: row.cod_faz, talhoes: {} };
-      FAZENDAS[faz].talhoes[String(row.talhao)] = {
+      const td = {
         layer: row.layer, frente: row.frente, semana: row.periodo_op,
         exp: row.status || '', tipo: row.tipo_linha || '', ciclo: row.ciclo || '',
-        ha: row.area_ha || 0, dia: null, estagio: row.estagio || ''
+        ha: row.area_ha || 0, dia: null, estagio: row.estagio || '',
+        usuario: '', data_consolidacao: null
       };
+      FAZENDAS[faz].talhoes[String(row.talhao)] = td;
       layerHa[String(row.layer)] = row.area_ha || 0;
+      layerTal[String(row.layer)] = td;
     }
 
     FAZENDA_NAMES.length = 0;
     Object.keys(FAZENDAS).sort().forEach(n => FAZENDA_NAMES.push(n));
+
+    for (const row of logs) {
+      const td = layerTal[String(row.layer)];
+      if (td) { td.usuario = row.usuario || ''; td.data_consolidacao = row.data_consolidacao || null; }
+    }
 
     const ultimoPorLayer = new Map();
     for (const row of logs) ultimoPorLayer.set(String(row.layer), row.usuario);
@@ -1953,6 +1977,39 @@ function renderTalhoes() {
   }).join('');
 
   updateTalCount();
+  atualizarPendentesBanner();
+}
+
+// Talhões já registrados hoje (localStorage) para uma fazenda, pendentes de consolidação
+function getRegistradosHoje(faz) {
+  return new Set(records.filter(r => r.fazenda === faz).map(r => r.talhao));
+}
+
+function atualizarPendentesBanner() {
+  const banner = document.getElementById('talPendentesBanner');
+  if (!banner) return;
+  if (!currentFaz) { banner.style.display = 'none'; return; }
+
+  const registrados = getRegistradosHoje(currentFaz);
+  const total = Object.keys(FAZENDAS[currentFaz].talhoes).length;
+  const restantes = total - registrados.size;
+
+  document.querySelectorAll('.tal-chip').forEach(c => {
+    c.classList.toggle('tal-restante', registrados.size > 0 && !registrados.has(+c.dataset.tal));
+  });
+
+  if (registrados.size > 0 && restantes > 0) {
+    document.getElementById('talPendentesMsg').textContent =
+      `${registrados.size} talhão(ões) já registrado(s) hoje, pendente(s) de consolidação — restam ${restantes}.`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function selecionarRestantesPendentes() {
+  if (cobertura !== 'parcial') setCobertura('parcial');
+  selectRestantesTal();
 }
 
 function toggleTal(el) {
@@ -1980,9 +2037,7 @@ function clearAllTal() {
 }
 
 function selectRestantesTal() {
-  const registrados = new Set(
-    records.filter(r => r.fazenda === currentFaz).map(r => r.talhao)
-  );
+  const registrados = getRegistradosHoje(currentFaz);
   document.querySelectorAll('.tal-chip').forEach(c => {
     c.classList.toggle('selected', !registrados.has(+c.dataset.tal));
   });
@@ -2105,6 +2160,7 @@ function registrar() {
   document.getElementById('selStatus').disabled = false;
   setCobertura('inteira');
   updateSubmitBtn();
+  atualizarPendentesBanner();
 }
 
 // ── Log ───────────────────────────────────────────────────────────────────
@@ -2154,6 +2210,7 @@ function delRecord(idx) {
   localStorage.setItem(todayKey, JSON.stringify(records));
   renderLog();
   updateExportBar(); updateStats();
+  atualizarPendentesBanner();
 }
 
 function scrollToLog() {
@@ -2405,6 +2462,7 @@ async function consolidar() {
     renderLog(); updateExportBar(); updateStats();
     renderFazendas(currentNames);
     renderPlano(); renderDashboard();
+    atualizarPendentesBanner();
 
   } catch (e) {
     _abrirConsolidarModal('Erro na consolidação',
@@ -3145,6 +3203,7 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg) {
     const stLbl = td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
     const _ym   = talYM(td);
     const data  = _ym ? _ym.split('-').reverse().join('/') : '—';
+    const quando = td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '—';
     return `<tr>
       <td style="font-family:monospace;font-weight:700">${t}</td>
       <td>${td.tipo || '—'}</td>
@@ -3152,12 +3211,15 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg) {
       <td style="font-family:monospace">${(td.ha || 0).toFixed(1)} ha</td>
       <td>${td.estagio || '—'}</td>
       <td style="font-family:monospace">${data}</td>
+      <td>${td.usuario || '—'}</td>
+      <td style="font-family:monospace">${quando}</td>
     </tr>`;
   }).join('');
 
   inner.innerHTML = `<table class="consulta-detail-table">
     <thead><tr>
       <th>Talhão</th><th>Tipo</th><th>Status</th><th>Área</th><th>Estágio</th><th>Mês</th>
+      <th>Registrado por</th><th>Quando</th>
     </tr></thead>
     <tbody>${talRows}</tbody>
   </table>`;
