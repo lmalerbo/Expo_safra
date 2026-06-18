@@ -3082,7 +3082,7 @@ function toggleConsultaSelectMode() {
     btn.classList.toggle('active-green', _consultaSelectMode);
     btn.textContent = _consultaSelectMode ? '☑ Selecionar' : '☐ Selecionar';
   }
-  renderConsulta();
+  renderConsulta(_consultaPage);
 }
 
 function updateConsultaSelBar() {
