@@ -1174,6 +1174,9 @@
       <select id="cFiltroFrente" class="mes-filter-select" onchange="renderConsulta()">
         <option value="">— todas as frentes —</option>
       </select>
+      <select id="cFiltroCiclo" class="mes-filter-select" onchange="renderConsulta()">
+        <option value="">— todos os ciclos —</option>
+      </select>
       <select id="cFiltroUsuario" class="mes-filter-select" onchange="renderConsulta()">
         <option value="">— todos os usuários —</option>
       </select>
@@ -3005,12 +3008,13 @@ function debouncedRenderConsulta() {
   _consultaDebounceTimer = setTimeout(renderConsulta, 200);
 }
 function populateConsultaFilters() {
-  const meses = new Set(), frentes = new Set(), usuarios = new Set();
+  const meses = new Set(), frentes = new Set(), ciclos = new Set(), usuarios = new Set();
   FAZENDA_NAMES.forEach(n => {
     Object.values(FAZENDAS[n].talhoes).forEach(t => {
       const ym = talYM(t);
       if (ym) meses.add(ym);
       if (t.frente) frentes.add(t.frente);
+      if (t.ciclo) ciclos.add(t.ciclo);
       if (t.usuario) usuarios.add(t.usuario);
     });
   });
@@ -3030,6 +3034,12 @@ function populateConsultaFilters() {
     [...frentes].sort((a,b)=>a-b).map(f => `<option value="${f}">Frente ${f}</option>`).join('');
   selFre.value = curFre;
 
+  const selCic = document.getElementById('cFiltroCiclo');
+  const curCic = selCic.value;
+  selCic.innerHTML = '<option value="">— todos os ciclos —</option>' +
+    [...ciclos].sort().map(c => `<option value="${c}">${c}</option>`).join('');
+  selCic.value = curCic;
+
   const selUsu = document.getElementById('cFiltroUsuario');
   const curUsu = selUsu.value;
   selUsu.innerHTML = '<option value="">— todos os usuários —</option>' +
@@ -3041,6 +3051,7 @@ function populateConsultaFilters() {
 function limparFiltrosConsulta() {
   document.getElementById('cFiltroMes').value     = '';
   document.getElementById('cFiltroFrente').value  = '';
+  document.getElementById('cFiltroCiclo').value   = '';
   document.getElementById('cFiltroUsuario').value = '';
   document.getElementById('cFiltroStatus').value  = '';
   renderConsulta();
@@ -3103,11 +3114,13 @@ function renderConsulta(page) {
   const q          = (document.getElementById('consultaSearch')?.value || '').toLowerCase();
   const filtMes    = document.getElementById('cFiltroMes')?.value     || '';
   const filtFrente = document.getElementById('cFiltroFrente')?.value  || '';
+  const filtCiclo  = document.getElementById('cFiltroCiclo')?.value   || '';
   const filtUsuario= document.getElementById('cFiltroUsuario')?.value || '';
   const filtStatus = document.getElementById('cFiltroStatus')?.value  || '';
 
   document.getElementById('cFiltroMes').classList.toggle('active', !!filtMes);
   document.getElementById('cFiltroFrente').classList.toggle('active', !!filtFrente);
+  document.getElementById('cFiltroCiclo').classList.toggle('active', !!filtCiclo);
   document.getElementById('cFiltroUsuario').classList.toggle('active', !!filtUsuario);
   document.getElementById('cFiltroStatus').classList.toggle('active', !!filtStatus);
 
@@ -3119,6 +3132,8 @@ function renderConsulta(page) {
     Object.values(FAZENDAS[n].talhoes).some(t => String(t.frente) === filtFrente));
   if (filtMes) names = names.filter(n =>
     Object.values(FAZENDAS[n].talhoes).some(t => talYM(t) === filtMes));
+  if (filtCiclo) names = names.filter(n =>
+    Object.values(FAZENDAS[n].talhoes).some(t => t.ciclo === filtCiclo));
   if (filtUsuario) names = names.filter(n =>
     Object.values(FAZENDAS[n].talhoes).some(t => matchUsuarioFiltro(t, filtUsuario)));
   if (filtStatus) names = names.filter(n => getFazStatus(n).status === filtStatus);
@@ -3144,6 +3159,7 @@ function renderConsulta(page) {
     const tals = allTals.filter(t =>
       (!filtMes    || talYM(t) === filtMes) &&
       (!filtFrente || String(t.frente) === filtFrente) &&
+      (!filtCiclo  || t.ciclo === filtCiclo) &&
       matchUsuarioFiltro(t, filtUsuario)
     );
     const totalTals = tals.length;
@@ -3156,7 +3172,7 @@ function renderConsulta(page) {
     const cbTd = _consultaSelectMode
       ? `<td class="consulta-cb" onclick="event.stopPropagation()"><input type="checkbox" ${_consultaSelected.has(name) ? 'checked' : ''} onclick="toggleConsultaSel('${escName}',this)"></td>`
       : '';
-    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}','${escUsu}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
+    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}','${filtCiclo}','${escUsu}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
       ${cbTd}
       <td><span class="consulta-expand-icon" id="cfi-${CSS.escape(name)}">▶</span><strong>${name}</strong></td>
       <td style="font-family:monospace">${d.cod}</td>
@@ -3193,7 +3209,7 @@ function renderConsulta(page) {
   </div>`;
 }
 
-function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtUsuarioArg) {
+function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg) {
   const esc = CSS.escape(name);
   const detailRow = document.getElementById('cdr-' + esc);
   const inner     = document.getElementById('cdinner-' + esc);
@@ -3219,6 +3235,7 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtUsuarioArg)
     const td = allTals[t];
     return (!filtMesArg    || talYM(td) === filtMesArg) &&
            (!filtFrenteArg || String(td.frente) === filtFrenteArg) &&
+           (!filtCicloArg  || td.ciclo === filtCicloArg) &&
            matchUsuarioFiltro(td, filtUsuarioArg);
   });
   const talRows = sorted.map(t => {
