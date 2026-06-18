@@ -1401,6 +1401,19 @@ async function _sbFetchAll(url) {
   return all;
 }
 
+// Soma, para cada usuário, a área dos layers cujo ÚLTIMO log_exportacoes é dele.
+// Recalculado do zero (não incremental) para nunca acumular drift se area_ha mudar depois.
+function computeUsuariosHaMap(layerHaMap, logRows) {
+  const ultimoPorLayer = new Map();
+  for (const row of logRows) ultimoPorLayer.set(String(row.layer), row.usuario);
+  const result = {};
+  for (const [layer, usuario] of ultimoPorLayer) {
+    if (!usuario) continue;
+    result[usuario] = Math.round(((result[usuario] || 0) + (layerHaMap[layer] || 0)) * 100) / 100;
+  }
+  return result;
+}
+
 // Carrega FAZENDAS/USUARIOS_HA/USUARIOS_CONFIG do Supabase, substituindo os
 // dados embutidos (mantidos como seed/fallback caso a requisição falhe).
 async function carregarDadosSupabase() {
@@ -1453,15 +1466,8 @@ async function carregarDadosSupabase() {
       if (td) { td.usuario = row.usuario || ''; td.data_consolidacao = row.data_consolidacao || null; }
     }
 
-    const ultimoPorLayer = new Map();
-    for (const row of logs) ultimoPorLayer.set(String(row.layer), row.usuario);
-    const novoUsuarioHa = {};
-    for (const [layer, usuario] of ultimoPorLayer) {
-      if (!usuario) continue;
-      novoUsuarioHa[usuario] = Math.round(((novoUsuarioHa[usuario] || 0) + (layerHa[layer] || 0)) * 100) / 100;
-    }
     for (const k of Object.keys(USUARIOS_HA)) delete USUARIOS_HA[k];
-    Object.assign(USUARIOS_HA, novoUsuarioHa);
+    Object.assign(USUARIOS_HA, computeUsuariosHaMap(layerHa, logs));
 
     if (usuarios.length) {
       USUARIOS_CONFIG.length = 0;
@@ -2412,14 +2418,14 @@ async function consolidar() {
     });
     if (!logRes.ok) throw new Error(`log_exportacoes: ${logRes.status} ${await logRes.text()}`);
 
-    // ── 3. Atualiza ha acumulado do usuário ───────────────────────────
+    // ── 3. Recalcula (do zero, não incremental) o ha acumulado do usuário ──
     _setConsolidarStatus('Atualizando estatísticas do usuário...');
-    const haDelta = recsUnicos.reduce((s, r) => s + (r.ha || 0), 0);
-    const userRes = await fetch(`${SUPABASE_URL}/rest/v1/usuarios?nome=eq.${encodeURIComponent(currentUser)}&select=ha`,
-      { headers: _sbHeaders() });
-    const userRows = userRes.ok ? await userRes.json() : [];
-    const haAtual  = userRows[0]?.ha || 0;
-    const haNovo   = Math.round((haAtual + haDelta) * 100) / 100;
+    const layerHaAtual = {};
+    for (const f of Object.values(FAZENDAS))
+      for (const td of Object.values(f.talhoes)) layerHaAtual[String(td.layer)] = td.ha || 0;
+    const logsAtuais = await _sbFetchAll(
+      `${SUPABASE_URL}/rest/v1/log_exportacoes?select=usuario,layer,data_consolidacao&order=data_consolidacao.asc`);
+    const haNovo = computeUsuariosHaMap(layerHaAtual, logsAtuais)[currentUser] || 0;
     await fetch(`${SUPABASE_URL}/rest/v1/usuarios?nome=eq.${encodeURIComponent(currentUser)}`, {
       method: 'PATCH',
       headers: _sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
