@@ -2993,6 +2993,12 @@ document.addEventListener('click', e => {
 });
 
 // ── Consulta ──────────────────────────────────────────────────────────────
+const CONSULTA_SEM_USUARIO = '__sem_usuario__';
+function matchUsuarioFiltro(t, filtUsuario) {
+  if (!filtUsuario) return true;
+  if (filtUsuario === CONSULTA_SEM_USUARIO) return !t.usuario;
+  return t.usuario === filtUsuario;
+}
 let _consultaDebounceTimer = null;
 function debouncedRenderConsulta() {
   clearTimeout(_consultaDebounceTimer);
@@ -3027,6 +3033,7 @@ function populateConsultaFilters() {
   const selUsu = document.getElementById('cFiltroUsuario');
   const curUsu = selUsu.value;
   selUsu.innerHTML = '<option value="">— todos os usuários —</option>' +
+    `<option value="${CONSULTA_SEM_USUARIO}">— sem registro —</option>` +
     [...usuarios].sort().map(u => `<option value="${u}">${u}</option>`).join('');
   selUsu.value = curUsu;
 }
@@ -3113,7 +3120,7 @@ function renderConsulta(page) {
   if (filtMes) names = names.filter(n =>
     Object.values(FAZENDAS[n].talhoes).some(t => talYM(t) === filtMes));
   if (filtUsuario) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => t.usuario === filtUsuario));
+    Object.values(FAZENDAS[n].talhoes).some(t => matchUsuarioFiltro(t, filtUsuario)));
   if (filtStatus) names = names.filter(n => getFazStatus(n).status === filtStatus);
 
   _consultaNames = names;
@@ -3135,9 +3142,9 @@ function renderConsulta(page) {
     const d = FAZENDAS[name];
     const allTals = Object.values(d.talhoes);
     const tals = allTals.filter(t =>
-      (!filtMes     || talYM(t) === filtMes) &&
-      (!filtFrente  || String(t.frente) === filtFrente) &&
-      (!filtUsuario || t.usuario === filtUsuario)
+      (!filtMes    || talYM(t) === filtMes) &&
+      (!filtFrente || String(t.frente) === filtFrente) &&
+      matchUsuarioFiltro(t, filtUsuario)
     );
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
@@ -3210,9 +3217,9 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtUsuarioArg)
   const allTals = FAZENDAS[name].talhoes;
   const sorted = Object.keys(allTals).sort((a, b) => +a - +b).filter(t => {
     const td = allTals[t];
-    return (!filtMesArg     || talYM(td) === filtMesArg) &&
-           (!filtFrenteArg  || String(td.frente) === filtFrenteArg) &&
-           (!filtUsuarioArg || td.usuario === filtUsuarioArg);
+    return (!filtMesArg    || talYM(td) === filtMesArg) &&
+           (!filtFrenteArg || String(td.frente) === filtFrenteArg) &&
+           matchUsuarioFiltro(td, filtUsuarioArg);
   });
   const talRows = sorted.map(t => {
     const td = allTals[t];
