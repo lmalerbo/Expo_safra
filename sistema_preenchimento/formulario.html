@@ -2822,7 +2822,7 @@ function setView(name) {
   document.getElementById('tabWork').classList.toggle('active', name === 'preenchimento');
   document.getElementById('tabConsulta').classList.toggle('active', name === 'consulta');
   if (name === 'dashboard') renderDashboard();
-  if (name === 'consulta')  { populateConsultaFilters(); renderConsulta(); }
+  if (name === 'consulta')  renderConsulta();
 }
 
 // ── Status por fazenda ────────────────────────────────────────────────────
@@ -3015,17 +3015,37 @@ function debouncedRenderConsulta() {
   clearTimeout(_consultaDebounceTimer);
   _consultaDebounceTimer = setTimeout(renderConsulta, 200);
 }
+// Recalcula as opções de cada filtro a partir dos talhões que passam nos
+// OUTROS filtros já ativos (cascata) — evita oferecer combinações sem resultado.
 function populateConsultaFilters() {
+  const filtMes     = document.getElementById('cFiltroMes')?.value     || '';
+  const filtFrente  = document.getElementById('cFiltroFrente')?.value  || '';
+  const filtCiclo   = document.getElementById('cFiltroCiclo')?.value   || '';
+  const filtUsuario = document.getElementById('cFiltroUsuario')?.value || '';
+  const filtStatus  = document.getElementById('cFiltroStatus')?.value  || '';
+
+  const todosTals = [];
+  FAZENDA_NAMES.forEach(n => Object.values(FAZENDAS[n].talhoes).forEach(t => todosTals.push(t)));
+
   const meses = new Set(), frentes = new Set(), ciclos = new Set(), usuarios = new Set();
-  FAZENDA_NAMES.forEach(n => {
-    Object.values(FAZENDAS[n].talhoes).forEach(t => {
+  let temSemUsuario = false;
+  todosTals.forEach(t => {
+    if (talhaoPassaFiltros(t, '', filtFrente, filtCiclo, filtUsuario, filtStatus)) {
       const ym = talYM(t);
       if (ym) meses.add(ym);
+    }
+    if (talhaoPassaFiltros(t, filtMes, '', filtCiclo, filtUsuario, filtStatus)) {
       if (t.frente) frentes.add(t.frente);
+    }
+    if (talhaoPassaFiltros(t, filtMes, filtFrente, '', filtUsuario, filtStatus)) {
       if (t.ciclo) ciclos.add(t.ciclo);
+    }
+    if (talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, '', filtStatus)) {
       if (t.usuario) usuarios.add(t.usuario);
-    });
+      else temSemUsuario = true;
+    }
   });
+
   const selMes = document.getElementById('cFiltroMes');
   const curMes = selMes.value;
   selMes.innerHTML = '<option value="">— todos os meses —</option>' +
@@ -3051,7 +3071,7 @@ function populateConsultaFilters() {
   const selUsu = document.getElementById('cFiltroUsuario');
   const curUsu = selUsu.value;
   selUsu.innerHTML = '<option value="">— todos os usuários —</option>' +
-    `<option value="${CONSULTA_SEM_USUARIO}">— sem registro —</option>` +
+    (temSemUsuario ? `<option value="${CONSULTA_SEM_USUARIO}">— sem registro —</option>` : '') +
     [...usuarios].sort().map(u => `<option value="${u}">${u}</option>`).join('');
   selUsu.value = curUsu;
 }
@@ -3067,7 +3087,6 @@ function limparFiltrosConsulta() {
 
 const CONSULTA_PAGE_SIZE = 50;
 let _consultaPage = 0;
-let _consultaNames = [];
 let _consultaSelected = new Set();
 let _consultaSelectMode = false;
 
@@ -3119,6 +3138,8 @@ function renderConsulta(page) {
   if (page === undefined) { _consultaPage = 0; }
   else { _consultaPage = page; }
 
+  populateConsultaFilters();
+
   const q          = (document.getElementById('consultaSearch')?.value || '').toLowerCase();
   const filtMes    = document.getElementById('cFiltroMes')?.value     || '';
   const filtFrente = document.getElementById('cFiltroFrente')?.value  || '';
@@ -3139,7 +3160,6 @@ function renderConsulta(page) {
   if (filtMes || filtFrente || filtCiclo || filtUsuario || filtStatus) names = names.filter(n =>
     Object.values(FAZENDAS[n].talhoes).some(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus)));
 
-  _consultaNames = names;
   const total = names.length;
   const totalPages = Math.max(1, Math.ceil(total / CONSULTA_PAGE_SIZE));
   _consultaPage = Math.min(_consultaPage, totalPages - 1);
