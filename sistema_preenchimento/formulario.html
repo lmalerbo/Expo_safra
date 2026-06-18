@@ -3160,8 +3160,9 @@ function renderConsulta(page) {
     const tals = allTals.filter(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario));
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
-    const { status, cls, ciclo } = getFazStatus(name);
+    const { status, cls } = getFazStatus(name);
     const frentes = [...new Set(tals.map(t => t.frente).filter(Boolean))].sort((a,b)=>a-b).join(', ') || '—';
+    const ciclos  = [...new Set(tals.map(t => t.ciclo).filter(Boolean))].sort().join(', ') || '—';
     const haTotal = tals.reduce((s, t) => s + (t.ha || 0), 0);
     const escName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const escUsu  = filtUsuario.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -3173,7 +3174,7 @@ function renderConsulta(page) {
       <td><span class="consulta-expand-icon" id="cfi-${CSS.escape(name)}">▶</span><strong>${name}</strong></td>
       <td style="font-family:monospace">${d.cod}</td>
       <td>${frentes}</td>
-      <td><span class="faz-tag faz-tag-muted">${ciclo}</span></td>
+      <td><span class="faz-tag faz-tag-muted">${ciclos}</span></td>
       <td><span class="faz-tag faz-tag-${cls}">${status}</span></td>
       <td style="font-family:monospace">${conc}/${totalTals}</td>
       <td style="font-family:monospace">${haTotal.toFixed(1)} ha</td>
