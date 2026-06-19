@@ -829,7 +829,6 @@
   .faz-tag-accent { background: rgba(200,150,12,.15);  color: var(--accent); }
   .faz-tag-blue   { background: rgba(90,159,212,.15);  color: var(--blue);   }
   .faz-tag-muted  { background: rgba(122,136,117,.15); color: var(--muted);  }
-  .faz-tag-red    { background: rgba(217,92,92,.15);   color: var(--red);    }
 
   /* ── Dashboard ── */
   .dash-page {
@@ -1767,14 +1766,6 @@ function is18m(estagio) {
   const e = estagio.toUpperCase();
   return e.includes('18') || e.includes('INVERNO') ||
          e.includes('FORMA') || e === 'ANO';
-}
-
-// Ciclo de safra: abril de um ano até março do ano seguinte (ex: "26-27" = abr/2026 a mar/2027)
-function getCicloAtual() {
-  const anoInicio = (_mesAtual + 1) >= 4 ? _anoAtual : _anoAtual - 1;
-  const yy1 = String(anoInicio % 100).padStart(2, '0');
-  const yy2 = String((anoInicio + 1) % 100).padStart(2, '0');
-  return `${yy1}-${yy2}`;
 }
 
 // Converte período de colheita (1-12) → "YYYY-MM" (todos no ano atual)
@@ -3284,10 +3275,8 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
     .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg));
   const talRows = sorted.map(t => {
     const td = allTals[t];
-    const refazer18m = !isTalDone(td) && td.exp === 'CONCLUIDO';
-    const stCls = refazer18m ? 'red' : isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
-    const stLbl = refazer18m ? 'Refazer (18m)'
-      : td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
+    const stCls = isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
+    const stLbl = td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
     const _ym   = talYM(td);
     const data  = _ym ? _ym.split('-').reverse().join('/') : '—';
     const quando = td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '—';
@@ -3330,9 +3319,6 @@ function getThemeColors() {
 }
 
 function isTalDone(t) {
-  // Talhão 18m no ciclo atual sempre precisa ser refeito, mesmo que já tenha
-  // sido concluído (a marcação antiga é de um ciclo anterior).
-  if (is18m(t.estagio) && t.ciclo === getCicloAtual()) return false;
   return t.exp === 'CONCLUIDO' || t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS';
 }
 
