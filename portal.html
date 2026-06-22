@@ -115,6 +115,7 @@
   .asset-icon  { font-size: 18px; width: 24px; text-align: center; }
   .asset-name  { font-size: 13px; font-weight: 500; font-family: monospace; }
   .asset-size  { font-size: 11px; color: var(--muted); }
+  .asset-bloco { font-size: 10px; color: var(--accent); margin-top: 3px; font-weight: 600; cursor: default; }
   .btn-download {
     background: var(--accent); color: #fff; border: none; border-radius: 6px;
     padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
@@ -175,6 +176,17 @@ function fileLabel(name) {
   return ext.toUpperCase();
 }
 
+// Projeto Personalizado (bloco de 2+ fazendas): nome sem fazenda no meio,
+// ex "10471+10476_Exp1L.dwg" — o mesmo arquivo é enviado para o release de
+// cada fazenda do bloco, então aqui só identificamos e listamos as outras.
+const RE_BLOCO = /^(\d+(?:\+\d+)+)_(Exp\d+L)\.(dwg|zip)$/i;
+function blocoInfo(name, tagAtual) {
+  const m = name.match(RE_BLOCO);
+  if (!m) return null;
+  const cods = m[1].split('+');
+  return { cods, outros: cods.filter(c => c !== String(tagAtual)) };
+}
+
 function fmtBytes(b) {
   if (b < 1024) return `${b} B`;
   if (b < 1024*1024) return `${(b/1024).toFixed(0)} KB`;
@@ -194,17 +206,23 @@ function renderReleases(releases) {
 
   content.innerHTML = `<div class="releases-grid">${releases.map(rel => {
     const assets = (rel.assets || []);
-    const assetsHtml = assets.length ? assets.map(a => `
+    const assetsHtml = assets.length ? assets.map(a => {
+      const bloco = blocoInfo(a.name, rel.tag_name);
+      return `
       <div class="asset-row">
         <div class="asset-left">
           <span class="asset-icon">${fileIcon(a.name)}</span>
           <div>
             <div class="asset-name">${a.name}</div>
             <div class="asset-size">${fileLabel(a.name)} · ${fmtBytes(a.size)}</div>
+            ${bloco ? `<div class="asset-bloco" title="Projeto Personalizado — mesmo arquivo também no release de: ${bloco.outros.join(', ') || '—'}">
+              🔗 Projeto Personalizado${bloco.outros.length ? ' · também em ' + bloco.outros.join(', ') : ''}
+            </div>` : ''}
           </div>
         </div>
         <a class="btn-download" href="${a.browser_download_url}" download>Baixar</a>
-      </div>`).join('') : `<div style="color:var(--muted);font-size:13px">Nenhum arquivo nesta fazenda.</div>`;
+      </div>`;
+    }).join('') : `<div style="color:var(--muted);font-size:13px">Nenhum arquivo nesta fazenda.</div>`;
 
     return `
     <div class="release-card open" data-name="${rel.name || rel.tag_name}">
