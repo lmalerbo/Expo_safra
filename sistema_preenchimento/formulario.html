@@ -2517,6 +2517,35 @@ function _logArquivos(msg) {
   if (el) el.insertAdjacentHTML('beforeend', `<div>${msg}</div>`);
 }
 
+// Explica exatamente por que um arquivo não corresponde a nenhum item esperado,
+// em vez de só dizer "fora do padrão".
+function _diagnosticarArquivoInvalido(filename, match, esperados) {
+  if (!match) {
+    if (!/\.(dwg|zip)$/i.test(filename)) {
+      const extM = filename.match(/\.([^.]+)$/);
+      return `extensão "${extM ? '.' + extM[1] : '(nenhuma)'}" inválida — precisa ser .dwg ou .zip`;
+    }
+    if (!/Exp\d+L/i.test(filename)) {
+      return `nome não contém "Exp1L" ou "Exp2L" — padrão esperado é {COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}`;
+    }
+    if (!/^\d+_/.test(filename)) {
+      return `nome precisa começar com o código da fazenda seguido de "_" — padrão esperado é {COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}`;
+    }
+    return `nome não segue o padrão {COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip} — verifique os separadores "_"`;
+  }
+
+  const [, cod, suf] = match;
+  const codsValidos = [...new Set(esperados.map(a => a.cod))];
+  if (!codsValidos.includes(cod)) {
+    return `código "${cod}" não corresponde a nenhuma das fazendas sendo consolidadas (esperado: ${codsValidos.join(', ')})`;
+  }
+  const sufsValidos = [...new Set(esperados.filter(a => a.cod === cod).map(a => a.suf))];
+  if (!sufsValidos.some(s => s.toLowerCase() === suf.toLowerCase())) {
+    return `sufixo "${suf}" inválido para o código ${cod} — esperado ${sufsValidos.join(' ou ')}`;
+  }
+  return 'combinação de código, sufixo e extensão não corresponde a nenhum arquivo pendente deste envio';
+}
+
 function _adicionarArquivoProjeto(input) {
   const files = [...input.files];
   input.value = '';
@@ -2528,7 +2557,8 @@ function _adicionarArquivoProjeto(input) {
       a.cod === m[1] && a.suf.toLowerCase() === m[2].toLowerCase() && a.ext.toLowerCase() === m[3].toLowerCase());
 
     if (!item) {
-      _logArquivos(`<span style="color:var(--red)">Arquivo fora do padrão esperado (ignorado): ${file.name}</span>`);
+      const motivo = _diagnosticarArquivoInvalido(file.name, m, _arquivosEsperados);
+      _logArquivos(`<span style="color:var(--red)">✗ ${file.name} — ${motivo}</span>`);
       continue;
     }
 
