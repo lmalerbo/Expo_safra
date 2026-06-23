@@ -13,7 +13,7 @@
 //      RELEASE_PROXY_URL no formulario.html com esse valor.
 
 const GH_OWNER = 'lmalerbo';
-const GH_REPO = 'project-colheita';
+const GH_REPO = 'Expo_safra';
 const ALLOWED_ORIGIN = 'https://lmalerbo.github.io';
 
 function corsHeaders() {

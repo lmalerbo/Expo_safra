@@ -47,7 +47,7 @@ the file (security comes from RLS policies, not from hiding the key — see `sup
   `github_pat_...` embedded in it gets auto-revoked by GitHub's secret scanning as soon as it's pushed.
   Wrong/malformed filenames get a specific reason via `_diagnosticarArquivoInvalido()` instead of a
   generic "fora do padrão" message. Releases are browsable at `portal.html` (repo root, lists every
-  release in `lmalerbo/project-colheita` by tag/name — no per-farm lookup needed).
+  release in `lmalerbo/Expo_safra` by tag/name — no per-farm lookup needed).
 - "⚙ Gerenciar" → "Atualizar Projetos" (`abrirAtualizarProjetos()`): re-upload the 4 project files for a
   farm **without** going through registrar→consolidar — useful when files need correcting after the
   fact. Two modes: **normal** (1 farm, same `{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}` pattern, files
