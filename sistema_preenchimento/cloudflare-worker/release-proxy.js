@@ -47,12 +47,21 @@ async function getOrCreateRelease(env, tag, name) {
   return res.json();
 }
 
+// O GitHub substitui espaço por ponto no nome do asset ao salvá-lo (ex: "SANTA RITA 8"
+// fica "SANTA.RITA.8") — sem normalizar aqui, a busca pelo asset existente nunca encontra
+// nada (sempre teria espaço onde o GitHub já tem ponto), o delete nunca roda, e o upload
+// novo colide com "already_exists" porque o GitHub aplica essa mesma normalização nele.
+function nomeComoGitHubSalva(filename) {
+  return filename.replace(/ /g, '.');
+}
+
 // Apaga o asset existente com esse nome, se houver. Não basta disparar o DELETE e seguir —
 // se ele falhar (permissão, asset já removido por outra causa) o upload seguinte colide
 // com "already_exists" sem nenhuma pista do motivo real. Retorna um diagnóstico (achou? em
 // qual id? o delete deu qual status?) pra poder ser anexado na mensagem de erro final.
 async function deleteAssetIfExists(env, release, filename) {
-  const existente = (release.assets || []).find(a => a.name === filename);
+  const normalizado = nomeComoGitHubSalva(filename);
+  const existente = (release.assets || []).find(a => a.name === filename || a.name === normalizado);
   if (!existente) return { found: false };
   const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${existente.id}`,
     { method: 'DELETE', headers: ghHeaders(env) });
@@ -77,7 +86,7 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/_version') {
-        return new Response('release-proxy v3 (delete-diagnostico)', { headers: corsHeaders() });
+        return new Response('release-proxy v4 (normaliza espaco-ponto)', { headers: corsHeaders() });
       }
 
       if (url.pathname === '/upload' && request.method === 'POST') {
