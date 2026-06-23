@@ -34,7 +34,7 @@ function ghHeaders(env, extra) {
 }
 
 async function getOrCreateRelease(env, tag, name) {
-  let res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/tags/${tag}`,
+  let res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/tags/${encodeURIComponent(tag)}`,
     { headers: ghHeaders(env) });
   if (res.status === 404) {
     res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases`, {
@@ -45,6 +45,28 @@ async function getOrCreateRelease(env, tag, name) {
   }
   if (!res.ok) throw new Error(`release ${tag}: ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+// Apaga o asset existente com esse nome, se houver. Não basta disparar o DELETE e seguir —
+// se ele falhar (permissão, asset já removido por outra causa) o upload seguinte colide
+// com "already_exists" sem nenhuma pista do motivo real.
+async function deleteAssetIfExists(env, release, filename) {
+  const existente = (release.assets || []).find(a => a.name === filename);
+  if (!existente) return;
+  const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${existente.id}`,
+    { method: 'DELETE', headers: ghHeaders(env) });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`delete asset ${filename} (id ${existente.id}): ${res.status} ${await res.text()}`);
+  }
+}
+
+async function uploadAsset(env, release, filename, contentType, body) {
+  const uploadUrl = release.upload_url.replace('{?name,label}', '') + `?name=${encodeURIComponent(filename)}`;
+  return fetch(uploadUrl, {
+    method: 'POST',
+    headers: ghHeaders(env, { 'Content-Type': contentType || 'application/octet-stream' }),
+    body,
+  });
 }
 
 export default {
@@ -63,20 +85,22 @@ export default {
           return new Response('tag e filename são obrigatórios', { status: 400, headers: corsHeaders() });
         }
 
-        const release = await getOrCreateRelease(env, tag, name);
+        const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
+        const body = await request.arrayBuffer();
 
-        const existente = (release.assets || []).find(a => a.name === filename);
-        if (existente) {
-          await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${existente.id}`,
-            { method: 'DELETE', headers: ghHeaders(env) });
+        let release = await getOrCreateRelease(env, tag, name);
+        await deleteAssetIfExists(env, release, filename);
+
+        let res = await uploadAsset(env, release, filename, contentType, body);
+
+        // Se ainda colidir com "already_exists" (delete não propagou a tempo do lado do
+        // GitHub), busca o release de novo, tenta apagar uma segunda vez e reenvia uma
+        // única vez antes de desistir — em vez de falhar direto na primeira corrida.
+        if (res.status === 422 && /already_exists/.test(await res.clone().text())) {
+          release = await getOrCreateRelease(env, tag, name);
+          await deleteAssetIfExists(env, release, filename);
+          res = await uploadAsset(env, release, filename, contentType, body);
         }
-
-        const uploadUrl = release.upload_url.replace('{?name,label}', '') + `?name=${encodeURIComponent(filename)}`;
-        const res = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: ghHeaders(env, { 'Content-Type': request.headers.get('Content-Type') || 'application/octet-stream' }),
-          body: await request.arrayBuffer(),
-        });
         if (!res.ok) throw new Error(`upload ${filename}: ${res.status} ${await res.text()}`);
 
         return new Response(await res.text(), { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } });
