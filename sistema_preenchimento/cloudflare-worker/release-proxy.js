@@ -49,15 +49,14 @@ async function getOrCreateRelease(env, tag, name) {
 
 // Apaga o asset existente com esse nome, se houver. Não basta disparar o DELETE e seguir —
 // se ele falhar (permissão, asset já removido por outra causa) o upload seguinte colide
-// com "already_exists" sem nenhuma pista do motivo real.
+// com "already_exists" sem nenhuma pista do motivo real. Retorna um diagnóstico (achou? em
+// qual id? o delete deu qual status?) pra poder ser anexado na mensagem de erro final.
 async function deleteAssetIfExists(env, release, filename) {
   const existente = (release.assets || []).find(a => a.name === filename);
-  if (!existente) return;
+  if (!existente) return { found: false };
   const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${existente.id}`,
     { method: 'DELETE', headers: ghHeaders(env) });
-  if (!res.ok && res.status !== 404) {
-    throw new Error(`delete asset ${filename} (id ${existente.id}): ${res.status} ${await res.text()}`);
-  }
+  return { found: true, id: existente.id, deleteStatus: res.status, deleteOk: res.ok || res.status === 404 };
 }
 
 async function uploadAsset(env, release, filename, contentType, body) {
@@ -77,6 +76,10 @@ export default {
 
     const url = new URL(request.url);
     try {
+      if (url.pathname === '/_version') {
+        return new Response('release-proxy v3 (delete-diagnostico)', { headers: corsHeaders() });
+      }
+
       if (url.pathname === '/upload' && request.method === 'POST') {
         const tag = url.searchParams.get('tag');
         const name = url.searchParams.get('name') || tag;
@@ -89,19 +92,23 @@ export default {
         const body = await request.arrayBuffer();
 
         let release = await getOrCreateRelease(env, tag, name);
-        await deleteAssetIfExists(env, release, filename);
+        let del1 = await deleteAssetIfExists(env, release, filename);
 
         let res = await uploadAsset(env, release, filename, contentType, body);
 
         // Se ainda colidir com "already_exists" (delete não propagou a tempo do lado do
         // GitHub), busca o release de novo, tenta apagar uma segunda vez e reenvia uma
         // única vez antes de desistir — em vez de falhar direto na primeira corrida.
+        let del2 = null;
         if (res.status === 422 && /already_exists/.test(await res.clone().text())) {
           release = await getOrCreateRelease(env, tag, name);
-          await deleteAssetIfExists(env, release, filename);
+          del2 = await deleteAssetIfExists(env, release, filename);
           res = await uploadAsset(env, release, filename, contentType, body);
         }
-        if (!res.ok) throw new Error(`upload ${filename}: ${res.status} ${await res.text()}`);
+        if (!res.ok) {
+          const diag = `delete1=${JSON.stringify(del1)} delete2=${JSON.stringify(del2)}`;
+          throw new Error(`upload ${filename}: ${res.status} ${await res.text()} | ${diag}`);
+        }
 
         return new Response(await res.text(), { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } });
       }
