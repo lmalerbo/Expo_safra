@@ -1411,8 +1411,8 @@
   <div class="modal" style="max-width:560px;width:92%">
     <h3>Atualizar Projetos</h3>
     <div style="font-size:11px;color:var(--muted);margin-top:6px">
-      Reenvia os 4 arquivos de projeto (.dwg/.zip × Exp1L/Exp2L) direto para o Release do
-      GitHub, sem precisar registrar/consolidar de novo.
+      Reenvia os 4 arquivos de projeto (.dwg/.zip × Exp1L/Exp2L), e opcionalmente o mapa de
+      partes (.pdf, quando houver), direto para o Release do GitHub, sem precisar registrar/consolidar de novo.
     </div>
 
     <div class="modal-field" style="margin-top:14px">
@@ -1451,10 +1451,11 @@
 
     <div id="projChecklistWrap" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-        Selecione os 4 arquivos correspondentes ao padrão <code id="projPadraoNome"></code>.
+        Selecione os 4 arquivos correspondentes ao padrão <code id="projPadraoNome"></code>
+        (o mapa de partes, terminando em "_Exp Mapa.pdf", é opcional — envie apenas quando houver).
       </div>
       <ul id="projChecklist" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9"></ul>
-      <input type="file" id="inputArquivosReenvio" accept=".dwg,.zip" multiple onchange="_adicionarArquivoReenvio(this)">
+      <input type="file" id="inputArquivosReenvio" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoReenvio(this)">
       <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarReenvio" onclick="enviarReenvioProjetos()" disabled>Enviar arquivos</button>
       <div id="logReenvioProjetos" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
     </div>
@@ -1487,9 +1488,10 @@ let activeFilters = new Set();
 // Feito via proxy (Cloudflare Worker) — o token do GitHub fica guardado lá como
 // secret, nunca neste arquivo (que é público). Ver cloudflare-worker/release-proxy.js.
 const RELEASE_PROXY_URL = 'https://expo-safra-release-proxy.leonardo-malerbo.workers.dev';
-const RE_ARQ_PROJETO = /^(\d+)_.+_(Exp\d+L)\.(dwg|zip)$/i;
+// "Exp Mapa.pdf" é o mapa de partes, opcional — mesma lógica de nome, sufixo fixo, extensão pdf.
+const RE_ARQ_PROJETO = /^(\d+)_.+_(Exp\d+L|Exp Mapa)\.(dwg|zip|pdf)$/i;
 // Projeto Personalizado (bloco de 2+ fazendas): sem nome no meio, ex "10471+10476_Exp1L.dwg"
-const RE_ARQ_PROJETO_BLOCO = /^(\d+(?:\+\d+)+)_(Exp\d+L)\.(dwg|zip)$/i;
+const RE_ARQ_PROJETO_BLOCO = /^(\d+(?:\+\d+)+)_(Exp\d+L|Exp Mapa)\.(dwg|zip|pdf)$/i;
 
 // ── Banco de dados (Supabase) ─────────────────────────────────────────────
 // Publishable key — feita para ser pública; segurança vem das policies de RLS.
@@ -2562,7 +2564,8 @@ async function consolidar() {
 
     const ha = totalHaRecords(records).toFixed(1);
 
-    // Monta a lista de arquivos obrigatórios: 4 por fazenda (Exp1L/Exp2L × dwg/zip)
+    // Monta a lista de arquivos: 4 obrigatórios por fazenda (Exp1L/Exp2L × dwg/zip)
+    // + 1 opcional (mapa de partes, Exp Mapa.pdf — só quando a fazenda tiver um)
     const fazendasUnicas = [...new Set(recsUnicos.map(r => r.fazenda))];
     _arquivosEsperados = [];
     _arquivosSelecionados = [];
@@ -2573,6 +2576,10 @@ async function consolidar() {
           _arquivosEsperados.push({ cod, faz, suf, ext, nome: `${cod}_*_${suf}.${ext}`, ok: false, matched: null });
         }
       }
+      _arquivosEsperados.push({
+        cod, faz, suf: 'Exp Mapa', ext: 'pdf',
+        nome: `${cod}_*_Exp Mapa.pdf`, ok: false, matched: null, opcional: true,
+      });
     }
 
     _abrirConsolidarModal('Consolidado com sucesso!', `
@@ -2587,16 +2594,17 @@ async function consolidar() {
         </div>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-        <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip)</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px">Arquivos de projeto obrigatórios (.dwg/.zip) + mapa de partes opcional (.pdf)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-          Selecione os ${_arquivosEsperados.length} arquivo(s) correspondentes aos itens abaixo (pode selecionar vários de uma vez), para liberar o envio e fechar.
+          Selecione os arquivos correspondentes aos itens abaixo (pode selecionar vários de uma vez), para liberar o envio e fechar.
           O nome deve seguir o padrão <code>{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}</code> (separado por "_") —
           o nome da fazenda no meio pode variar, o sistema identifica pelo código e pelo sufixo.
+          O mapa de partes (<code>{COD_FAZ}_{NOME}_Exp Mapa.pdf</code>) é opcional — envie apenas quando a fazenda tiver um.
         </div>
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
-          ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('')}
+          ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">${_checklistItemHtml(a)}</li>`).join('')}
         </ul>
-        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip" multiple onchange="_adicionarArquivoProjeto(this)">
+        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoProjeto(this)">
         <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarArquivos" onclick="enviarArquivosProjeto()" disabled>Enviar arquivos</button>
         <div id="uploadArquivosLog" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
       </div>`, false);
@@ -2638,19 +2646,29 @@ function _logArquivos(msg) {
   if (el) el.insertAdjacentHTML('beforeend', `<div>${msg}</div>`);
 }
 
+// Render de um item do checklist de arquivos — compartilhado entre os fluxos de
+// consolidação e "Atualizar Projetos". Itens opcionais (mapa de partes) usam ➖
+// em vez de ⬜ quando não preenchidos, e nunca bloqueiam o envio.
+function _checklistItemHtml(item) {
+  const icone = item.ok ? '✅' : (item.opcional ? '➖' : '⬜');
+  const tagOpcional = item.opcional ? ' <span style="color:var(--muted);font-style:italic">(opcional)</span>' : '';
+  const tagMatched = item.matched ? ` <span style="color:var(--muted)">→ ${item.matched}</span>` : '';
+  return `${icone} ${item.nome}${tagOpcional}${tagMatched}`;
+}
+
 // Explica exatamente por que um arquivo não corresponde a nenhum item esperado,
 // em vez de só dizer "fora do padrão".
 function _diagnosticarArquivoInvalido(filename, match, esperados, personalizado) {
   const padrao = personalizado
-    ? '{COD1+COD2+...}_{Exp1L|Exp2L}.{dwg|zip}'
-    : '{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip}';
+    ? '{COD1+COD2+...}_{Exp1L|Exp2L}.{dwg|zip} (ou _Exp Mapa.pdf, opcional)'
+    : '{COD_FAZ}_{NOME}_{Exp1L|Exp2L}.{dwg|zip} (ou _Exp Mapa.pdf, opcional)';
   if (!match) {
-    if (!/\.(dwg|zip)$/i.test(filename)) {
+    if (!/\.(dwg|zip|pdf)$/i.test(filename)) {
       const extM = filename.match(/\.([^.]+)$/);
-      return `extensão "${extM ? '.' + extM[1] : '(nenhuma)'}" inválida — precisa ser .dwg ou .zip`;
+      return `extensão "${extM ? '.' + extM[1] : '(nenhuma)'}" inválida — precisa ser .dwg, .zip ou .pdf`;
     }
-    if (!/Exp\d+L/i.test(filename)) {
-      return `nome não contém "Exp1L" ou "Exp2L" — padrão esperado é ${padrao}`;
+    if (!/Exp\d+L/i.test(filename) && !/Exp Mapa/i.test(filename)) {
+      return `nome não contém "Exp1L", "Exp2L" ou "Exp Mapa" — padrão esperado é ${padrao}`;
     }
     if (personalizado) {
       if (!/^\d+(?:\+\d+)+_/.test(filename)) {
@@ -2709,12 +2727,11 @@ function _validarArquivosProjeto() {
     });
     item.ok = !!match;
     item.matched = match ? match.name : null;
-    if (!item.ok) todosOk = false;
+    if (!item.opcional && !item.ok) todosOk = false;
   }
   document.querySelectorAll('#checklistArquivos li').forEach(li => {
     const item = _arquivosEsperados.find(a => a.nome === li.dataset.nome);
-    li.innerHTML = `${item.ok ? '✅' : '⬜'} ${item.nome}` +
-      (item.matched ? ` <span style="color:var(--muted)">→ ${item.matched}</span>` : '');
+    li.innerHTML = _checklistItemHtml(item);
     li.style.color = item.ok ? 'var(--green)' : '';
   });
 
@@ -2917,6 +2934,12 @@ function _montarChecklistReenvio() {
       });
     }
   }
+  // Mapa de partes — opcional, mesmo padrão de nome do bloco/normal, extensão pdf
+  _projArquivosEsperados.push({
+    cod, suf: 'Exp Mapa', ext: 'pdf',
+    nome: _projPersonalizado ? `${cod}_Exp Mapa.pdf` : `${cod}_*_Exp Mapa.pdf`,
+    ok: false, matched: null, opcional: true,
+  });
   _projArquivosSelecionados = [];
   document.getElementById('projPadraoNome').textContent = _projPersonalizado
     ? `${cod}_{Exp1L|Exp2L}.{dwg|zip}`
@@ -2930,7 +2953,7 @@ function _atualizarProjChecklistWrap() {
   document.getElementById('projChecklistWrap').style.display = mostrar ? '' : 'none';
   if (mostrar) {
     document.getElementById('projChecklist').innerHTML = _projArquivosEsperados
-      .map(a => `<li data-nome="${a.nome}">⬜ ${a.nome}</li>`).join('');
+      .map(a => `<li data-nome="${a.nome}">${_checklistItemHtml(a)}</li>`).join('');
   }
 }
 
@@ -2979,13 +3002,12 @@ function _validarArquivosReenvio() {
     });
     item.ok = !!match;
     item.matched = match ? match.name : null;
-    if (!item.ok) todosOk = false;
+    if (!item.opcional && !item.ok) todosOk = false;
   }
   document.querySelectorAll('#projChecklist li').forEach(li => {
     const item = _projArquivosEsperados.find(a => a.nome === li.dataset.nome);
     if (!item) return;
-    li.innerHTML = `${item.ok ? '✅' : '⬜'} ${item.nome}` +
-      (item.matched ? ` <span style="color:var(--muted)">→ ${item.matched}</span>` : '');
+    li.innerHTML = _checklistItemHtml(item);
     li.style.color = item.ok ? 'var(--green)' : '';
   });
   document.getElementById('btnEnviarReenvio').disabled = !todosOk;

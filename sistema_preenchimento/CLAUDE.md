@@ -133,6 +133,12 @@ IndexedDB (`pf-config` database, `handles` store) persists `FileSystemDirectoryH
 - Projeto Personalizado (bloco de 2+ fazendas, "Atualizar Projetos"): `{COD1}+{COD2}+...+_Exp{N}L.{dwg|zip}`,
   **sem** nome de fazenda no meio (e.g. `10471+10476_Exp1L.dwg`). Regex: `RE_ARQ_PROJETO_BLOCO` in
   `formulario.html`. Codes are matched as an unordered set, not a literal string (`_normalizarCodsBloco()`).
+- Mapa de partes (opcional, quando a fazenda tiver um): `{COD_FAZ}_{NOME_FAZENDA}_Exp Mapa.pdf` (normal) or
+  `{COD1}+{COD2}+..._Exp Mapa.pdf` (bloco). Same `RE_ARQ_PROJETO`/`RE_ARQ_PROJETO_BLOCO` regexes (extended to
+  accept the literal `Exp Mapa` suffix and `.pdf`) handle it in both upload flows — the post-consolidação
+  checklist and "Atualizar Projetos". It's marked `opcional: true` in the checklist item objects, so it never
+  blocks "Enviar arquivos"/"Atualizar Projetos" when absent, but uploads to the same farm release as the
+  other files when present.
 
 **LAYER key:** always a string of digits without decimal point — use `layer_to_str()` whenever converting from spreadsheet values (handles `1001005.0` → `"1001005"`).
 
