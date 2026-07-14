@@ -226,6 +226,26 @@ def _int_or_none(v):
         return None
 
 
+def _sb_fetch_all(url, headers):
+    """GET paginado (PostgREST limita a resposta por padrão, geralmente a 1000 linhas —
+    sem isso, tabelas grandes como `programacao` retornariam só a 1ª página em silêncio)."""
+    page_size = 1000
+    offset = 0
+    rows = []
+    while True:
+        res = requests.get(url, headers=dict(headers, **{
+            'Range-Unit': 'items', 'Range': f'{offset}-{offset + page_size - 1}',
+        }))
+        if not res.ok and res.status_code != 206:
+            raise RuntimeError(f"{url}: {res.status_code} {res.text}")
+        page = res.json()
+        rows.extend(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
+    return rows
+
+
 voo_rows = []
 for rec in records:
     layer_details = rec.get('layerDetails') or {}
@@ -297,13 +317,15 @@ print(f"  {len(voo_updates)} LAYER(s) com voo de Falha Soca.\n")
 
 # ── 5. Atualiza programacao.voo_control_status — só para LAYERs que já existem ──
 print("Verificando LAYERs existentes em programacao...")
-_res_layers = requests.get(f"{SUPABASE_URL}/rest/v1/programacao?select=layer", headers=SB_HEADERS)
-if not _res_layers.ok:
-    print(f"ERRO ao ler layers de programacao: {_res_layers.status_code} {_res_layers.text}")
+try:
+    _layers_rows = _sb_fetch_all(f"{SUPABASE_URL}/rest/v1/programacao?select=layer", SB_HEADERS)
+except RuntimeError as e:
+    print(f"ERRO ao ler layers de programacao: {e}")
     fechar_log(_log_fh)
     input("\nPressione Enter para sair...")
     sys.exit(1)
-existing_layers = {row['layer'] for row in _res_layers.json()}
+existing_layers = {row['layer'] for row in _layers_rows}
+print(f"  {len(existing_layers)} LAYER(s) na programação atual.")
 
 voo_updates_validos = [r for r in voo_updates if r['layer'] in existing_layers]
 n_fora = len(voo_updates) - len(voo_updates_validos)
