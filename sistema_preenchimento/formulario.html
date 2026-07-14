@@ -330,21 +330,22 @@
   .tal-chip-porte {
     display: inline-block; padding: 0 4px; border-radius: 2px;
     font-size: 8px; font-weight: 800; font-family: monospace;
-    background: rgba(200,150,12,.18); color: var(--accent);
+    background: rgba(217,92,92,.18); color: var(--red);
     margin-left: 3px; vertical-align: middle; line-height: 14px;
   }
   .faz-tag-porte-destaque {
     display: inline-block; padding: 2px 7px; border-radius: 4px;
     font-size: 11px; font-weight: 800; font-family: monospace;
-    background: var(--accent); color: #fff;
+    background: var(--red); color: #fff;
     margin-right: 8px; vertical-align: middle;
   }
-  /* Cor da tag de porte por status de voo no dronemgmt (projeto Falha Soca) —
-     sem_agendamento fica com a cor padrão (--accent) acima, inalterada. */
-  .tal-chip-porte.porte-agendado  { background: rgba(217,92,92,.18);  color: var(--red); }
+  /* Cor da tag de porte por status de voo no dronemgmt (projeto Falhas Soca) — gradiente
+     vermelho→verde: sem_agendamento (nenhum registro) fica com a cor padrão (--red) acima,
+     a mais urgente; as demais etapas avançam pela próxima cor conforme progridem. */
+  .tal-chip-porte.porte-agendado  { background: rgba(200,150,12,.18); color: var(--accent); }
   .tal-chip-porte.porte-voado     { background: rgba(217,184,76,.18); color: var(--yellow); }
   .tal-chip-porte.porte-divulgado { background: rgba(76,175,114,.18); color: var(--green); }
-  .faz-tag-porte-destaque.porte-agendado  { background: var(--red); }
+  .faz-tag-porte-destaque.porte-agendado  { background: var(--accent); }
   .faz-tag-porte-destaque.porte-voado     { background: var(--yellow); }
   .faz-tag-porte-destaque.porte-divulgado { background: var(--green); }
 
@@ -2008,15 +2009,16 @@ function tagPorte(t) {
 }
 
 // Bucket de cor da tag de porte, a partir do status de voo sincronizado do dronemgmt
-// (projeto "Falha Soca", ver engine/atualizar_voos.py). Mapeamento de códigos é uma
-// estimativa inicial (1/2 = cedo, 5/9 = em processamento, 10 = Relatório divulgado) —
-// conferir contra dados reais após a primeira sincronização e ajustar se necessário.
+// (projeto "Falhas Soca", ver engine/atualizar_voos.py). Códigos confirmados contra dados
+// reais: 2 "A voar" e 11 (fila, sem imagem/motivo) = já agendado; 3/8 = imagem processada
+// mas rejeitada (Porte Baixo/Alto, Imagem não recebida, Apontamento Duplicado) = voado,
+// precisa reprocessar; 10 = Relatório divulgado (final).
 function vooBucket(t) {
   const cod = t.voo_control_status;
-  if (cod == null) return 'sem_agendamento';
-  if (cod === 10) return 'divulgado';
-  if (cod >= 5)   return 'voado';
-  return 'agendado';
+  if (cod == null) return 'sem_agendamento';               // nenhum registro no dronemgmt
+  if (cod === 10) return 'divulgado';                       // Relatório divulgado
+  if (cod === 3 || cod === 8) return 'voado';               // imagem processada (rejeitada/reprocessar)
+  return 'agendado';                                        // 2 (A voar), 11 (na fila) e demais códigos ainda não vistos
 }
 const VOO_BUCKET_CLASS = { agendado: 'porte-agendado', voado: 'porte-voado', divulgado: 'porte-divulgado' };
 

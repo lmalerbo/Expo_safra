@@ -69,17 +69,24 @@ def login_dronemgmt(base_url, usuario, senha, timeout_ms=30000):
 
 # ── controlStatus → descrição. Preencher conforme for confirmado na tela. ──
 # Códigos sem mapeamento aqui aparecem como "Status N" (não ficam em branco).
+# 3/8/11 confirmados contra dados reais do projeto "Falhas Soca" (ver vooBucket() em
+# formulario.html): 11 = na fila do dronemgmt, sem imagem/motivo ainda; 3/8 = imagem já
+# processada mas rejeitada (motivo específico em reason_descricao, ex: "Porte Baixo",
+# "Imagem não recebida"), precisa reprocessar/reagendar.
 STATUS_LABELS = {
     1:  "Aguardar plantio",
     2:  "A voar",
+    3:  "Imagem rejeitada (ver motivo)",
     5:  "Aguard. envio p/ processamento",
+    8:  "Imagem rejeitada (ver motivo)",
     9:  "Processado, aguardando divulgação",
     10: "Relatório divulgado",
+    11: "Aguardando voo",
 }
 
 # Projeto de voo relevante para a colheita (nome normalizado: sem acento, upper).
 # Os demais projetos entram em voo_status mas não tocam programacao.voo_control_status.
-COLHEITA_PROJETOS = {'FALHA SOCA'}
+COLHEITA_PROJETOS = {'FALHAS SOCA'}
 
 
 def _fix_mojibake(s):
