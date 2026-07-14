@@ -1,0 +1,10 @@
+{
+  "_comentario": "Credenciais de login do portal dronemgmt (prd-dronemgmt.pedraagroindustrial.com.br). Copie para dronemgmt_config.json e preencha usuario/senha — o script loga automaticamente via Playwright a cada execução (não precisa mais capturar cookie manualmente). Requer 'pip install -r engine/requirements.txt' e, uma única vez, 'python -m playwright install chromium'.",
+
+  "base_url": "https://prd-dronemgmt.pedraagroindustrial.com.br",
+  "form_id": "77df7375-daae-4431-9f43-8c1743909c24",
+  "unit_id": "1832e51f-b52b-4a28-b66c-803ff0925779",
+
+  "usuario": "",
+  "senha": ""
+}

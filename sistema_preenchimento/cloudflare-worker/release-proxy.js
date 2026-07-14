@@ -8,7 +8,8 @@
 // Deploy (via dashboard do Cloudflare):
 //   1. Workers & Pages → Create → Create Worker → cole este arquivo.
 //   2. Settings → Variables → Add secret: GH_TOKEN = <PAT com permissão "Contents" read/write
-//      no repo lmalerbo/Expo_safra>.
+//      E "Actions" read/write no repo lmalerbo/Expo_safra — o escopo Actions é necessário para
+//      as rotas /trigger-voos e /voos-status (disparo/consulta do workflow atualizar-voos.yml)>.
 //   3. Anote a URL do worker (https://<nome>.<conta>.workers.dev) e configure
 //      RELEASE_PROXY_URL no formulario.html com esse valor.
 
@@ -119,6 +120,24 @@ export default {
           throw new Error(`upload ${filename}: ${res.status} ${await res.text()} | ${diag}`);
         }
 
+        return new Response(await res.text(), { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } });
+      }
+
+      if (url.pathname === '/trigger-voos' && request.method === 'POST') {
+        const res = await fetch(
+          `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/atualizar-voos.yml/dispatches`,
+          { method: 'POST', headers: ghHeaders(env, { 'Content-Type': 'application/json' }), body: JSON.stringify({ ref: 'main' }) }
+        );
+        if (!res.ok) return new Response(`erro ao disparar: ${res.status} ${await res.text()}`, { status: res.status, headers: corsHeaders() });
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } });
+      }
+
+      if (url.pathname === '/voos-status' && request.method === 'GET') {
+        const res = await fetch(
+          `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/atualizar-voos.yml/runs?per_page=1`,
+          { headers: ghHeaders(env) }
+        );
+        if (!res.ok) return new Response(`erro ao consultar status: ${res.status} ${await res.text()}`, { status: res.status, headers: corsHeaders() });
         return new Response(await res.text(), { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } });
       }
 

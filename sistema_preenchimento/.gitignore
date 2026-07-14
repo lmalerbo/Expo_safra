@@ -18,3 +18,6 @@ base_fazendas/*.xls*
 supabase_config.json
 supabase/.temp
 supabase/.branches
+
+# Credenciais de sessão do portal dronemgmt (ver dronemgmt_config.example.json)
+dronemgmt_config.json

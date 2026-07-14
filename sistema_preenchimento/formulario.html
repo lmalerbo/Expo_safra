@@ -339,6 +339,14 @@
     background: var(--accent); color: #fff;
     margin-right: 8px; vertical-align: middle;
   }
+  /* Cor da tag de porte por status de voo no dronemgmt (projeto Falha Soca) —
+     sem_agendamento fica com a cor padrão (--accent) acima, inalterada. */
+  .tal-chip-porte.porte-agendado  { background: rgba(217,92,92,.18);  color: var(--red); }
+  .tal-chip-porte.porte-voado     { background: rgba(217,184,76,.18); color: var(--yellow); }
+  .tal-chip-porte.porte-divulgado { background: rgba(76,175,114,.18); color: var(--green); }
+  .faz-tag-porte-destaque.porte-agendado  { background: var(--red); }
+  .faz-tag-porte-destaque.porte-voado     { background: var(--yellow); }
+  .faz-tag-porte-destaque.porte-divulgado { background: var(--green); }
 
   /* ── Filtros de fazenda ── */
   .faz-filter-row {
@@ -1368,6 +1376,13 @@
           <div class="gerenciar-menu-sub">Reenviar arquivos .dwg/.zip de fazendas já consolidadas</div>
         </div>
       </button>
+      <button class="gerenciar-menu-item" onclick="abrirVooModal()">
+        <span class="gerenciar-menu-icon">🚁</span>
+        <div>
+          <div class="gerenciar-menu-title">Voo (dronemgmt)</div>
+          <div class="gerenciar-menu-sub">Status de voo dos talhões Sem Linhas (Falha Soca)</div>
+        </div>
+      </button>
     </div>
     <div class="modal-actions">
       <button class="btn-modal-ok" onclick="closeMenuGerenciar()">Fechar</button>
@@ -1516,6 +1531,26 @@
   </div>
 </div>
 
+<!-- Modal Voo (dronemgmt) -->
+<div class="modal-overlay" id="vooOverlay">
+  <div class="modal">
+    <h3>🚁 Voo (dronemgmt)</h3>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">
+      Sincroniza o status de voo (projeto "Falha Soca") dos talhões Sem Linhas — colore a tag de
+      dias de porte conforme a etapa no dronemgmt. Roda sozinho de hora em hora; use o botão para
+      forçar uma atualização agora, sem esperar o próximo ciclo.
+    </div>
+    <div id="vooSyncStatus" style="font-size:11px;margin:10px 0 8px">Carregando status...</div>
+    <button class="btn-modal-ok" onclick="sincronizarVoosAgora()">↻ Sincronizar agora</button>
+    <div id="logVooSync" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="voltarMenuGerenciar('vooOverlay')">← Voltar</button>
+      <button class="btn-modal-ok" onclick="closeVooModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Servidor de consolidação ──────────────────────────────────────────────
 const SERVIDOR_URL = 'http://10.120.107.81:5678';
@@ -1618,6 +1653,8 @@ async function carregarDadosSupabase() {
         layer: row.layer, frente: row.frente, semana: row.periodo_op,
         exp: row.status || '', tipo: row.tipo_linha || '', ciclo: row.ciclo || '',
         ha: row.area_ha || 0, dia: null, estagio: row.estagio || '', data_corte: row.data_corte || null,
+        voo_control_status: row.voo_control_status ?? null,
+        voo_control_status_descricao: row.voo_control_status_descricao || '',
         usuario: '', data_consolidacao: null
       };
       FAZENDAS[fazKey].talhoes[String(row.talhao)] = td;
@@ -1970,6 +2007,25 @@ function tagPorte(t) {
   return Math.floor((Date.now() - dataCorte.getTime()) / 86400000);
 }
 
+// Bucket de cor da tag de porte, a partir do status de voo sincronizado do dronemgmt
+// (projeto "Falha Soca", ver engine/atualizar_voos.py). Mapeamento de códigos é uma
+// estimativa inicial (1/2 = cedo, 5/9 = em processamento, 10 = Relatório divulgado) —
+// conferir contra dados reais após a primeira sincronização e ajustar se necessário.
+function vooBucket(t) {
+  const cod = t.voo_control_status;
+  if (cod == null) return 'sem_agendamento';
+  if (cod === 10) return 'divulgado';
+  if (cod >= 5)   return 'voado';
+  return 'agendado';
+}
+const VOO_BUCKET_CLASS = { agendado: 'porte-agendado', voado: 'porte-voado', divulgado: 'porte-divulgado' };
+
+// Converte um resultado de tagPorte() + vooBucket() no atributo class= completo do badge.
+function classeBadgePorte(baseClass, t) {
+  const mod = VOO_BUCKET_CLASS[vooBucket(t)];
+  return mod ? `${baseClass} ${mod}` : baseClass;
+}
+
 // Converte período de colheita (1-12) → "YYYY-MM" (todos no ano atual)
 function semanaToYM(semana) {
   if (!semana) return null;
@@ -2201,7 +2257,7 @@ function renderTalhoes() {
     const badge18 = is18m(td.estagio)
       ? '<span class="tal-chip-18m">18m</span>' : '';
     const dias = tagPorte(td);
-    const badgePorte = dias !== null ? `<span class="tal-chip-porte">${dias}d</span>` : '';
+    const badgePorte = dias !== null ? `<span class="${classeBadgePorte('tal-chip-porte', td)}">${dias}d</span>` : '';
     return `<div class="tal-chip ${cobertura==='inteira'?'selected disabled':''}"
                  data-tal="${t}" onclick="toggleTal(this)">${t}${badge18}${badgePorte}</div>`;
   }).join('');
@@ -3331,7 +3387,7 @@ function voltarMenuGerenciar(overlayId) {
   _fecharModalGenerico(overlayId);
   abrirMenuGerenciar();
 }
-['menuGerenciarOverlay', 'perfisOverlay', 'baseOverlay', 'projetosOverlay'].forEach(id => {
+['menuGerenciarOverlay', 'perfisOverlay', 'baseOverlay', 'projetosOverlay', 'vooOverlay'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === document.getElementById(id)) _fecharModalGenerico(id);
   });
@@ -3355,6 +3411,96 @@ function abrirAtualizarBase() {
   _abrirModalGenerico('baseOverlay');
 }
 function closeBaseModal() { _fecharModalGenerico('baseOverlay'); }
+
+function abrirVooModal() {
+  closeMenuGerenciar();
+  _abrirModalGenerico('vooOverlay');
+  _carregarStatusVoo();
+}
+function closeVooModal() { _fecharModalGenerico('vooOverlay'); }
+
+// ── Sincronização de voo com o dronemgmt (dispara/acompanha o workflow do GitHub Actions) ──
+// O workflow já roda sozinho de hora em hora (.github/workflows/atualizar-voos.yml);
+// isso só dá um jeito de forçar uma rodada agora, sem esperar, pelo navegador.
+let _vooSyncPollTimer = null;
+// id do último run ANTES de clicar "Sincronizar agora" — null quando não há disparo pendente
+// nesta sessão. Sem isso, o primeiro check do polling pega o run ANTERIOR (já concluído),
+// acha que terminou na hora e recarrega a tela com dados ainda velhos, sem nunca acompanhar
+// o run novo de verdade até ele de fato concluir.
+let _vooSyncBaselineRunId = null;
+
+function _fmtRelativo(iso) {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'agora mesmo';
+  if (min < 60) return `há ${min} min`;
+  return `há ${Math.round(min / 60)}h`;
+}
+
+function _renderVooSyncStatus(run) {
+  const el = document.getElementById('vooSyncStatus');
+  if (!el) return;
+  if (!run) { el.innerHTML = '<span style="color:var(--muted)">Nenhuma execução encontrada.</span>'; return; }
+  const concluido = run.status === 'completed';
+  const ok = concluido && run.conclusion === 'success';
+  const cor = !concluido ? 'var(--accent)' : ok ? 'var(--green)' : 'var(--red)';
+  const texto = !concluido ? 'Em execução…' : ok ? 'Concluída com sucesso' : `Falhou (${run.conclusion})`;
+  el.innerHTML = `<span style="color:${cor};font-weight:700">${texto}</span>
+    <span style="color:var(--muted)"> — ${_fmtRelativo(run.created_at)}</span>
+    <a href="${run.html_url}" target="_blank" style="margin-left:6px;color:var(--accent)">ver no GitHub ↗</a>`;
+}
+
+async function _carregarStatusVoo() {
+  const el = document.getElementById('vooSyncStatus');
+  if (el) el.innerHTML = '<span style="color:var(--muted)">Carregando status...</span>';
+  try {
+    const base = RELEASE_PROXY_URL.replace(/\/+$/, '');
+    const res = await fetch(`${base}/voos-status`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    const run = (data.workflow_runs || [])[0];
+
+    const aguardandoNovoRun = _vooSyncBaselineRunId !== null && run && run.id === _vooSyncBaselineRunId;
+    if (aguardandoNovoRun) {
+      if (el) el.innerHTML = '<span style="color:var(--accent);font-weight:700">Aguardando início…</span>';
+    } else {
+      _renderVooSyncStatus(run);
+    }
+
+    if (_vooSyncPollTimer) { clearInterval(_vooSyncPollTimer); _vooSyncPollTimer = null; }
+
+    if (aguardandoNovoRun || (run && run.status !== 'completed')) {
+      _vooSyncPollTimer = setInterval(_carregarStatusVoo, 15000);
+    } else if (_vooSyncBaselineRunId !== null) {
+      // run novo (id mudou desde o disparo) e já concluído — dados frescos no banco,
+      // recarrega a tela sem precisar que o usuário dê F5.
+      _vooSyncBaselineRunId = null;
+      await carregarDadosSupabase();
+      renderFazendas(currentNames);
+      renderPlano();
+      renderDashboard();
+    }
+  } catch (e) {
+    if (el) el.innerHTML = `<span style="color:var(--muted)">Não foi possível carregar o status (${e.message}).</span>`;
+  }
+}
+
+async function sincronizarVoosAgora() {
+  const log = document.getElementById('logVooSync');
+  const setLog = msg => { if (log) log.innerHTML = msg; };
+  setLog('Disparando sincronização...');
+  try {
+    const base = RELEASE_PROXY_URL.replace(/\/+$/, '');
+    const statusRes = await fetch(`${base}/voos-status`);
+    _vooSyncBaselineRunId = statusRes.ok ? ((await statusRes.json()).workflow_runs || [])[0]?.id ?? null : null;
+
+    const res = await fetch(`${base}/trigger-voos`, { method: 'POST' });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    setLog('<span style="color:var(--green);font-weight:700">✓ Disparada! Leva alguns minutos — acompanhe abaixo.</span>');
+    setTimeout(_carregarStatusVoo, 5000);
+  } catch (e) {
+    setLog(`<span style="color:var(--red)">✗ ${e.message}</span>`);
+  }
+}
 
 function renderAdminList() {
   const el = document.getElementById('adminUserList');
@@ -3822,9 +3968,13 @@ function renderConsulta(page) {
     const frentes = [...new Set(tals.map(t => t.frente).filter(Boolean))].sort((a,b)=>a-b).join(', ') || '—';
     const ciclos  = [...new Set(tals.map(t => t.ciclo).filter(Boolean))].sort().join(', ') || '—';
     const haTotal = tals.reduce((s, t) => s + (t.ha || 0), 0);
-    const portesFaz = tals.map(tagPorte).filter(v => v !== null);
-    const porteMax = portesFaz.length ? Math.max(...portesFaz) : null;
-    const portTag = porteMax !== null ? `<span class="faz-tag-porte-destaque">${porteMax}d</span>` : '';
+    const talMaxPorte = tals.reduce((best, t) => {
+      const dias = tagPorte(t);
+      return dias !== null && (!best || dias > best.dias) ? { dias, t } : best;
+    }, null);
+    const portTag = talMaxPorte
+      ? `<span class="${classeBadgePorte('faz-tag-porte-destaque', talMaxPorte.t)}">${talMaxPorte.dias}d</span>`
+      : '';
     const escName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const escUsu  = filtUsuario.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const cbTd = _consultaSelectMode
@@ -3900,7 +4050,7 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
     const data  = _ym ? _ym.split('-').reverse().join('/') : '—';
     const quando = td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '—';
     const dias   = tagPorte(td);
-    const porte  = dias !== null ? `${dias}d` : '—';
+    const porte  = dias !== null ? `<span class="${classeBadgePorte('tal-chip-porte', td)}">${dias}d</span>` : '—';
     return `<tr>
       <td style="font-family:monospace;font-weight:700">${t}</td>
       <td>${td.tipo || '—'}</td>

@@ -1,0 +1,46 @@
+name: Atualizar status de voo (dronemgmt)
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # a cada hora
+  workflow_dispatch:        # permite rodar manualmente em Actions → Run workflow
+
+jobs:
+  atualizar-voos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Instalar dependências
+        run: |
+          pip install -r sistema_preenchimento/engine/requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Criar arquivos de config
+        working-directory: sistema_preenchimento
+        run: |
+          cat > dronemgmt_config.json <<EOF
+          {
+            "base_url": "https://prd-dronemgmt.pedraagroindustrial.com.br",
+            "form_id": "77df7375-daae-4431-9f43-8c1743909c24",
+            "unit_id": "1832e51f-b52b-4a28-b66c-803ff0925779",
+            "usuario": "${{ secrets.DRONEMGMT_USUARIO }}",
+            "senha": "${{ secrets.DRONEMGMT_SENHA }}"
+          }
+          EOF
+          cat > supabase_config.json <<EOF
+          {
+            "url": "https://wewicqysphguehqnyjdh.supabase.co",
+            "key": "sb_publishable_qAKXJVaKSMeD6oUvLoQ7EA_ae5t6XBQ"
+          }
+          EOF
+
+      - name: Rodar atualizar_voos.py
+        working-directory: sistema_preenchimento
+        run: yes "" | python engine/atualizar_voos.py
