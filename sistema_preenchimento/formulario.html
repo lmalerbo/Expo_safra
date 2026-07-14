@@ -1430,8 +1430,8 @@
       <strong>DESC_SECAO</strong> (nome da fazenda), <strong>TALHAO</strong> (número do talhão),
       <strong>AREA_PROD</strong> (área em ha), <strong>ESTAGIO</strong> (opcional) e
       <strong>DATA_CORTE</strong> (opcional, data do corte — usada para a tag de porte em talhões
-      18 Meses/2° Corte/Sem Linhas com corte dentro da safra atual). Uma linha por
-      talhão — toda fazenda do ICOL precisa ter aqui os seus talhões, senão é ignorada.
+      com STATUS "Sem Linhas" e corte dentro da safra atual, exceto ESTAGIO "A Plantar"). Uma linha
+      por talhão — toda fazenda do ICOL precisa ter aqui os seus talhões, senão é ignorada.
       <div style="margin-top:6px"><button class="btn-modal-cancel" style="font-size:11px" onclick="_baixarModeloBaseFazendas()">⬇ Baixar modelo</button></div>
     </div>
 
@@ -1958,23 +1958,15 @@ function is18m(estagio) {
 const SAFRA_INICIO = new Date(2026, 2, 1);
 const SAFRA_FIM     = new Date(2027, 2, 1);
 
-// Estágios elegíveis para a tag de porte (18 Meses / 2° Corte). Comparação por
-// substring, tolerando variações de acento/ordinal na coluna ESTAGIO da base de talhões.
-function estagioElegivelPorte(estagio) {
-  if (!estagio) return false;
-  const e = String(estagio).toUpperCase().trim();
-  return e.includes('18 MES') || e.includes('2 CORTE') || e.includes('2° CORTE') ||
-         e.includes('2º CORTE') || e.includes('2O CORTE');
-}
-
 // Retorna a quantidade de dias corridos desde DATA_CORTE até hoje, ou null se o
-// talhão não for elegível (estágio/"sem linhas" + corte dentro da safra atual).
+// talhão não for elegível: só talhões com STATUS "Sem Linhas", exceto ESTAGIO
+// "A Plantar", e com corte dentro da safra atual.
 function tagPorte(t) {
+  if (statusEfetivo(t) !== 'SEM LINHAS') return null;
+  if (String(t.estagio || '').toUpperCase().trim() === 'A PLANTAR') return null;
   if (!t.data_corte) return null;
   const dataCorte = new Date(t.data_corte);
   if (isNaN(dataCorte) || dataCorte < SAFRA_INICIO || dataCorte >= SAFRA_FIM) return null;
-  const elegivel = estagioElegivelPorte(t.estagio) || statusEfetivo(t) === 'SEM LINHAS';
-  if (!elegivel) return null;
   return Math.floor((Date.now() - dataCorte.getTime()) / 86400000);
 }
 
