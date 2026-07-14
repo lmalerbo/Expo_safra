@@ -333,6 +333,12 @@
     background: rgba(200,150,12,.18); color: var(--accent);
     margin-left: 3px; vertical-align: middle; line-height: 14px;
   }
+  .faz-tag-porte-destaque {
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 800; font-family: monospace;
+    background: var(--accent); color: #fff;
+    margin-right: 8px; vertical-align: middle;
+  }
 
   /* ── Filtros de fazenda ── */
   .faz-filter-row {
@@ -1225,6 +1231,12 @@
         <option value="CONCLUIDO">Concluído</option>
         <option value="REAVALIAR">Reavaliar</option>
         <option value="SEM LINHAS">Sem Linhas</option>
+      </select>
+      <select id="cFiltroPorte" class="mes-filter-select" onchange="renderConsulta()">
+        <option value="">— todos os portes —</option>
+        <option value="abaixo85">Abaixo de 85d</option>
+        <option value="85a125">85d – 125d</option>
+        <option value="acima125">Acima de 125d</option>
       </select>
       <button class="faz-filter-btn" id="btnConsultaSel" onclick="toggleConsultaSelectMode()">&#9744; Selecionar</button>
       <button class="faz-filter-btn" onclick="limparFiltrosConsulta()">Limpar</button>
@@ -3621,13 +3633,24 @@ function matchUsuarioFiltro(t, filtUsuario) {
   if (filtUsuario === CONSULTA_SEM_USUARIO) return !t.usuario;
   return t.usuario === filtUsuario;
 }
+// Buckets do filtro de porte (dias corridos desde o corte) — ver tagPorte().
+function portePassaFiltro(dias, filtPorte) {
+  if (!filtPorte) return true;
+  if (dias === null) return false;
+  if (filtPorte === 'abaixo85')  return dias < 85;
+  if (filtPorte === '85a125')    return dias >= 85 && dias <= 125;
+  if (filtPorte === 'acima125')  return dias > 125;
+  return true;
+}
+
 // Um talhão só passa se atender TODOS os filtros simultaneamente (não cada um isoladamente)
-function talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus) {
+function talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus, filtPorte) {
   return (!filtMes    || talYM(t) === filtMes) &&
          (!filtFrente || String(t.frente) === filtFrente) &&
          (!filtCiclo  || t.ciclo === filtCiclo) &&
          matchUsuarioFiltro(t, filtUsuario) &&
-         (!filtStatus || statusEfetivo(t) === filtStatus);
+         (!filtStatus || statusEfetivo(t) === filtStatus) &&
+         portePassaFiltro(tagPorte(t), filtPorte);
 }
 let _consultaDebounceTimer = null;
 function debouncedRenderConsulta() {
@@ -3642,6 +3665,7 @@ function populateConsultaFilters() {
   const filtCiclo   = document.getElementById('cFiltroCiclo')?.value   || '';
   const filtUsuario = document.getElementById('cFiltroUsuario')?.value || '';
   const filtStatus  = document.getElementById('cFiltroStatus')?.value  || '';
+  const filtPorte   = document.getElementById('cFiltroPorte')?.value   || '';
 
   const todosTals = [];
   FAZENDA_NAMES.forEach(n => Object.values(FAZENDAS[n].talhoes).forEach(t => todosTals.push(t)));
@@ -3649,17 +3673,17 @@ function populateConsultaFilters() {
   const meses = new Set(), frentes = new Set(), ciclos = new Set(), usuarios = new Set();
   let temSemUsuario = false;
   todosTals.forEach(t => {
-    if (talhaoPassaFiltros(t, '', filtFrente, filtCiclo, filtUsuario, filtStatus)) {
+    if (talhaoPassaFiltros(t, '', filtFrente, filtCiclo, filtUsuario, filtStatus, filtPorte)) {
       const ym = talYM(t);
       if (ym) meses.add(ym);
     }
-    if (talhaoPassaFiltros(t, filtMes, '', filtCiclo, filtUsuario, filtStatus)) {
+    if (talhaoPassaFiltros(t, filtMes, '', filtCiclo, filtUsuario, filtStatus, filtPorte)) {
       if (t.frente) frentes.add(t.frente);
     }
-    if (talhaoPassaFiltros(t, filtMes, filtFrente, '', filtUsuario, filtStatus)) {
+    if (talhaoPassaFiltros(t, filtMes, filtFrente, '', filtUsuario, filtStatus, filtPorte)) {
       if (t.ciclo) ciclos.add(t.ciclo);
     }
-    if (talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, '', filtStatus)) {
+    if (talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, '', filtStatus, filtPorte)) {
       if (t.usuario) usuarios.add(t.usuario);
       else temSemUsuario = true;
     }
@@ -3701,6 +3725,7 @@ function limparFiltrosConsulta() {
   document.getElementById('cFiltroCiclo').value   = '';
   document.getElementById('cFiltroUsuario').value = '';
   document.getElementById('cFiltroStatus').value  = '';
+  document.getElementById('cFiltroPorte').value   = '';
   renderConsulta();
 }
 
@@ -3765,19 +3790,21 @@ function renderConsulta(page) {
   const filtCiclo  = document.getElementById('cFiltroCiclo')?.value   || '';
   const filtUsuario= document.getElementById('cFiltroUsuario')?.value || '';
   const filtStatus = document.getElementById('cFiltroStatus')?.value  || '';
+  const filtPorte  = document.getElementById('cFiltroPorte')?.value   || '';
 
   document.getElementById('cFiltroMes').classList.toggle('active', !!filtMes);
   document.getElementById('cFiltroFrente').classList.toggle('active', !!filtFrente);
   document.getElementById('cFiltroCiclo').classList.toggle('active', !!filtCiclo);
   document.getElementById('cFiltroUsuario').classList.toggle('active', !!filtUsuario);
   document.getElementById('cFiltroStatus').classList.toggle('active', !!filtStatus);
+  document.getElementById('cFiltroPorte').classList.toggle('active', !!filtPorte);
 
   let names = q
     ? FAZENDA_NAMES.filter(n => n.toLowerCase().includes(q) || String(FAZENDAS[n].cod).includes(q))
     : FAZENDA_NAMES;
 
-  if (filtMes || filtFrente || filtCiclo || filtUsuario || filtStatus) names = names.filter(n =>
-    Object.values(FAZENDAS[n].talhoes).some(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus)));
+  if (filtMes || filtFrente || filtCiclo || filtUsuario || filtStatus || filtPorte) names = names.filter(n =>
+    Object.values(FAZENDAS[n].talhoes).some(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus, filtPorte)));
 
   const total = names.length;
   const totalPages = Math.max(1, Math.ceil(total / CONSULTA_PAGE_SIZE));
@@ -3796,21 +3823,24 @@ function renderConsulta(page) {
   const rows = pageNames.map(name => {
     const d = FAZENDAS[name];
     const allTals = Object.values(d.talhoes);
-    const tals = allTals.filter(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus));
+    const tals = allTals.filter(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus, filtPorte));
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
     const { status, cls } = statusAgregado(tals);
     const frentes = [...new Set(tals.map(t => t.frente).filter(Boolean))].sort((a,b)=>a-b).join(', ') || '—';
     const ciclos  = [...new Set(tals.map(t => t.ciclo).filter(Boolean))].sort().join(', ') || '—';
     const haTotal = tals.reduce((s, t) => s + (t.ha || 0), 0);
+    const portesFaz = tals.map(tagPorte).filter(v => v !== null);
+    const porteMax = portesFaz.length ? Math.max(...portesFaz) : null;
+    const portTag = porteMax !== null ? `<span class="faz-tag-porte-destaque">${porteMax}d</span>` : '';
     const escName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const escUsu  = filtUsuario.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const cbTd = _consultaSelectMode
       ? `<td class="consulta-cb" onclick="event.stopPropagation()"><input type="checkbox" ${_consultaSelected.has(name) ? 'checked' : ''} onclick="toggleConsultaSel('${escName}',this)"></td>`
       : '';
-    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}','${filtCiclo}','${escUsu}','${filtStatus}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
+    return `<tr class="consulta-faz-row${_consultaSelected.has(name) ? ' selected' : ''}" onclick="toggleFazDetail('${escName}',this,'${filtMes}','${filtFrente}','${filtCiclo}','${escUsu}','${filtStatus}','${filtPorte}')" oncontextmenu="openCtxMenu(event,'${escName}')" id="cfr-${CSS.escape(name)}">
       ${cbTd}
-      <td><span class="consulta-expand-icon" id="cfi-${CSS.escape(name)}">▶</span><strong>${name}</strong></td>
+      <td><span class="consulta-expand-icon" id="cfi-${CSS.escape(name)}">▶</span>${portTag}<strong>${name}</strong></td>
       <td style="font-family:monospace">${d.cod}</td>
       <td>${frentes}</td>
       <td><span class="faz-tag faz-tag-muted">${ciclos}</span></td>
@@ -3845,7 +3875,7 @@ function renderConsulta(page) {
   </div>`;
 }
 
-function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg) {
+function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg, filtPorteArg) {
   const esc = CSS.escape(name);
   const detailRow = document.getElementById('cdr-' + esc);
   const inner     = document.getElementById('cdinner-' + esc);
@@ -3868,7 +3898,7 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
 
   const allTals = FAZENDAS[name].talhoes;
   const sorted = Object.keys(allTals).sort((a, b) => +a - +b)
-    .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg));
+    .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg, filtPorteArg));
   const talRows = sorted.map(t => {
     const td = allTals[t];
     const st    = statusEfetivo(td);
