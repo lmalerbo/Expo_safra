@@ -4006,8 +4006,7 @@ function renderDashboard() {
   // KPI cards
   const fmtHa = v => v.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
   document.getElementById('dashKpiRow').innerHTML = [
-    { label: 'Total Fazendas', val: d.fazTotal.toLocaleString('pt-BR'), sub: `${d.fazConc} fazenda${d.fazConc!==1?'s':''} concluída${d.fazConc!==1?'s':''}`, cls: '' },
-    { label: 'Área Total',     val: fmtHa(d.haTotal), sub: 'hectares programados', cls: '' },
+    { label: 'Área Total',     val: fmtHa(d.haTotal), sub: `${d.fazConc}/${d.fazTotal} Faz. concluídas`, cls: '' },
     { label: 'Ha Concluído',   val: fmtHa(d.haConc),  sub: `${d.pct}% do total`, cls: 'green' },
     { label: 'Ha Reavaliar',   val: fmtHa(d.haReavaliar), sub: 'concluído sem registro de usuário', cls: 'yellow' },
     { label: 'Ha A Fazer',     val: fmtHa(d.haFazer), sub: 'hectares restantes', cls: 'blue' },
