@@ -54,7 +54,10 @@ PASTAS_PROJETO = {'agdata', 'aggps', 'gen4', 'gs3_2630'}
 with open(os.path.join(_BASE_DIR, 'config.json'), 'r', encoding='utf-8') as f:
     _cfg = json.load(f)
 
-PREFIXO_EXCLUIR = _cfg['codfaz_excluir_prefixo']
+PREFIXOS_EXCLUIR = _cfg['codfaz_excluir_prefixo']
+if isinstance(PREFIXOS_EXCLUIR, str):
+    PREFIXOS_EXCLUIR = [PREFIXOS_EXCLUIR]
+PREFIXOS_EXCLUIR = tuple(PREFIXOS_EXCLUIR)
 
 LOG_PATH = os.path.join(_SCRIPT_DIR, 'upload_releases_fazendas_manual.log')
 
@@ -118,7 +121,7 @@ def coletar_situacoes(root_fazendas):
         if not m:
             continue
         cod_faz = m.group(1)
-        if cod_faz.startswith(PREFIXO_EXCLUIR):
+        if cod_faz.startswith(PREFIXOS_EXCLUIR):
             continue
 
         colheita = os.path.join(caminho_fazenda, CICLO, SUBPATH_COLHEITA)

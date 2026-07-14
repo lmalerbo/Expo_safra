@@ -32,7 +32,10 @@ with open(os.path.join(_BASE_DIR, 'config.json'), 'r', encoding='utf-8') as f:
 
 PASTA_DWG = _cfg['pasta_destino_dwg']
 PASTA_ZIP = _cfg['pasta_destino_zip']
-PREFIXO_EXCLUIR = _cfg['codfaz_excluir_prefixo']
+PREFIXOS_EXCLUIR = _cfg['codfaz_excluir_prefixo']
+if isinstance(PREFIXOS_EXCLUIR, str):
+    PREFIXOS_EXCLUIR = [PREFIXOS_EXCLUIR]
+PREFIXOS_EXCLUIR = tuple(PREFIXOS_EXCLUIR)
 
 
 def coletar_arquivos(pasta):
@@ -48,7 +51,7 @@ def coletar_arquivos(pasta):
         if not m:
             continue
         cod_faz = m.group(1)
-        if cod_faz.startswith(PREFIXO_EXCLUIR):
+        if cod_faz.startswith(PREFIXOS_EXCLUIR):
             continue
         arquivos.append((cod_faz, nome, caminho))
     return arquivos

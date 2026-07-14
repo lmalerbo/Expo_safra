@@ -142,6 +142,6 @@ IndexedDB (`pf-config` database, `handles` store) persists `FileSystemDirectoryH
 
 **LAYER key:** always a string of digits without decimal point — use `layer_to_str()` whenever converting from spreadsheet values (handles `1001005.0` → `"1001005"`).
 
-**`codfaz_excluir_prefixo`** in `config.json` (value `"20"`) — COD_FAZ values starting with this prefix are excluded from consolidation (test/administrative farms).
+**`codfaz_excluir_prefixo`** in `config.json` (value `["20", "21"]`) — COD_FAZ values starting with any of these prefixes are excluded from consolidation (test/administrative farms).
 
 **consolidar_queue protocol:** browser writes `req_{timestamp}.json` → vigia processes → writes `res_{id}.json` → browser reads and deletes. The browser polls with a 1s interval and 180s timeout.

@@ -5,7 +5,7 @@
   "timeout_consolidar_s": 180,
   "tentativas_arquivo_bloqueado": 3,
   "espera_arquivo_bloqueado_s": 10,
-  "codfaz_excluir_prefixo": "20",
+  "codfaz_excluir_prefixo": ["20", "21"],
 
   "pasta_raiz_fazendas": "I:\\Projetos\\EXPORTAÇÃO SAFRA\\Colheita",
   "pasta_destino_dwg":   "I:\\Projetos\\EXPORTAÇÃO SAFRA\\Colheita\\dwg",

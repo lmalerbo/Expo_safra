@@ -20,6 +20,7 @@
     --green:    #4CAF72;
     --red:      #D95C5C;
     --blue:     #5A9FD4;
+    --yellow:   #D9B84C;
     --text:     #E5EAE0;
     --muted:    #7A8875;
     --shadow:   0 2px 8px rgba(0,0,0,.35);
@@ -37,6 +38,7 @@
     --green:    #2D7A4A;
     --red:      #C0392B;
     --blue:     #2A6FA8;
+    --yellow:   #A67C0A;
     --text:     #1C1F1A;
     --muted:    #6B6B5F;
     --shadow:   0 2px 8px rgba(0,0,0,.10);
@@ -325,6 +327,12 @@
     background: rgba(217,92,92,.18); color: var(--red);
     margin-left: 3px; vertical-align: middle; line-height: 14px;
   }
+  .tal-chip-porte {
+    display: inline-block; padding: 0 4px; border-radius: 2px;
+    font-size: 8px; font-weight: 800; font-family: monospace;
+    background: rgba(200,150,12,.18); color: var(--accent);
+    margin-left: 3px; vertical-align: middle; line-height: 14px;
+  }
 
   /* ── Filtros de fazenda ── */
   .faz-filter-row {
@@ -526,6 +534,7 @@
   .status-CONCLUIDO   { background: rgba(76,175,114,.15); color: var(--green); }
   .status-A\ FAZER    { background: rgba(200,150,12,.15); color: var(--accent); }
   .status-SEM\ LINHAS { background: rgba(122,136,117,.15); color: var(--muted); }
+  .status-REAVALIAR   { background: rgba(217,184,76,.15);  color: var(--yellow); }
 
   .btn-edit, .btn-del {
     background: none; border: none;
@@ -686,6 +695,19 @@
     box-shadow: 0 12px 40px rgba(0,0,0,.35);
   }
   .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    transition: border-color .15s, background .15s;
+  }
+  .dropzone-over {
+    border-color: var(--accent);
+    background: rgba(200,150,12,.08);
+  }
+  .dropzone-hint {
+    font-size: 11px; color: var(--muted); margin-bottom: 6px;
+  }
   .modal-field { margin-bottom: 14px; }
   .modal-field label {
     display: block; font-size: 10px; font-weight: 700;
@@ -842,6 +864,7 @@
   .faz-tag-accent { background: rgba(200,150,12,.15);  color: var(--accent); }
   .faz-tag-blue   { background: rgba(90,159,212,.15);  color: var(--blue);   }
   .faz-tag-muted  { background: rgba(122,136,117,.15); color: var(--muted);  }
+  .faz-tag-yellow { background: rgba(217,184,76,.15);  color: var(--yellow); }
 
   /* ── Dashboard ── */
   .dash-page {
@@ -870,6 +893,7 @@
   .dash-kpi-card.green::after  { background: var(--green); }
   .dash-kpi-card.accent::after { background: var(--accent); }
   .dash-kpi-card.blue::after   { background: var(--blue); }
+  .dash-kpi-card.yellow::after { background: var(--yellow); }
   .dash-kpi-card:hover { border-color: var(--muted); }
   .dash-kpi-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -882,6 +906,7 @@
   .dash-kpi-card.green  .dash-kpi-value { color: var(--green); }
   .dash-kpi-card.accent .dash-kpi-value { color: var(--accent); }
   .dash-kpi-card.blue   .dash-kpi-value { color: var(--blue); }
+  .dash-kpi-card.yellow .dash-kpi-value { color: var(--yellow); }
   .dash-kpi-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
 
   .dash-progress-wrap {
@@ -1197,7 +1222,9 @@
       <select id="cFiltroStatus" class="mes-filter-select" onchange="renderConsulta()">
         <option value="">— todos os status —</option>
         <option value="A FAZER">A Fazer</option>
-        <option value="CONCLUÍDO">Concluído</option>
+        <option value="CONCLUIDO">Concluído</option>
+        <option value="REAVALIAR">Reavaliar</option>
+        <option value="SEM LINHAS">Sem Linhas</option>
       </select>
       <button class="faz-filter-btn" id="btnConsultaSel" onclick="toggleConsultaSelectMode()">&#9744; Selecionar</button>
       <button class="faz-filter-btn" onclick="limparFiltrosConsulta()">Limpar</button>
@@ -1389,7 +1416,9 @@
     <div id="infoBaseFazendas" style="display:none;font-size:11px;color:var(--muted);background:var(--surface2);border-radius:6px;padding:8px;margin-top:6px">
       Cabeçalho na primeira linha, com as colunas <strong>SECAO</strong> (código da fazenda),
       <strong>DESC_SECAO</strong> (nome da fazenda), <strong>TALHAO</strong> (número do talhão),
-      <strong>AREA_PROD</strong> (área em ha) e <strong>ESTAGIO</strong> (opcional). Uma linha por
+      <strong>AREA_PROD</strong> (área em ha), <strong>ESTAGIO</strong> (opcional) e
+      <strong>DATA_CORTE</strong> (opcional, data do corte — usada para a tag de porte em talhões
+      18 Meses/2° Corte/Sem Linhas com corte dentro da safra atual). Uma linha por
       talhão — toda fazenda do ICOL precisa ter aqui os seus talhões, senão é ignorada.
       <div style="margin-top:6px"><button class="btn-modal-cancel" style="font-size:11px" onclick="_baixarModeloBaseFazendas()">⬇ Baixar modelo</button></div>
     </div>
@@ -1455,7 +1484,10 @@
         (o mapa de partes, terminando em "_Exp Mapa.pdf", é opcional — envie apenas quando houver).
       </div>
       <ul id="projChecklist" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9"></ul>
-      <input type="file" id="inputArquivosReenvio" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoReenvio(this)">
+      <div class="dropzone" id="dzArquivosReenvio">
+        <div class="dropzone-hint">Arraste os arquivos aqui ou selecione:</div>
+        <input type="file" id="inputArquivosReenvio" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoReenvio(this)">
+      </div>
       <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarReenvio" onclick="enviarReenvioProjetos()" disabled>Enviar arquivos</button>
       <div id="logReenvioProjetos" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
     </div>
@@ -1498,8 +1530,8 @@ const RE_ARQ_PROJETO_BLOCO = /^(\d+(?:\+\d+)+)_(Exp\d+L|Exp Mapa)\.(dwg|zip|pdf)
 const SUPABASE_URL = 'https://wewicqysphguehqnyjdh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qAKXJVaKSMeD6oUvLoQ7EA_ae5t6XBQ';
 
-// COD FAZ com este prefixo são unidades administrativas (espelha config.json:codfaz_excluir_prefixo)
-const CODFAZ_EXCLUIR_PREFIXO = '20';
+// COD FAZ com estes prefixos são unidades administrativas (espelha config.json:codfaz_excluir_prefixo)
+const CODFAZ_EXCLUIR_PREFIXOS = ['20', '21'];
 
 function _sbHeaders(extra) {
   return Object.assign({
@@ -1573,7 +1605,7 @@ async function carregarDadosSupabase() {
       const td = {
         layer: row.layer, frente: row.frente, semana: row.periodo_op,
         exp: row.status || '', tipo: row.tipo_linha || '', ciclo: row.ciclo || '',
-        ha: row.area_ha || 0, dia: null, estagio: row.estagio || '',
+        ha: row.area_ha || 0, dia: null, estagio: row.estagio || '', data_corte: row.data_corte || null,
         usuario: '', data_consolidacao: null
       };
       FAZENDAS[fazKey].talhoes[String(row.talhao)] = td;
@@ -1628,10 +1660,10 @@ function _baixarModeloICOL() {
 
 function _baixarModeloBaseFazendas() {
   const data = [
-    ['SECAO', 'DESC_SECAO', 'TALHAO', 'AREA_PROD', 'ESTAGIO'],
-    [10503, 'SANTA LUZIA 5', 1, 25.4, 'SOQUEIRA'],
-    [10503, 'SANTA LUZIA 5', 2, 18.9, 'CANA PLANTA'],
-    [10504, 'SANTA LUZIA 6', 1, 32.1, 'SOQUEIRA'],
+    ['SECAO', 'DESC_SECAO', 'TALHAO', 'AREA_PROD', 'ESTAGIO', 'DATA_CORTE'],
+    [10503, 'SANTA LUZIA 5', 1, 25.4, 'SOQUEIRA', ''],
+    [10503, 'SANTA LUZIA 5', 2, 18.9, '18 MESES', '15/04/2026'],
+    [10504, 'SANTA LUZIA 6', 1, 32.1, '2° CORTE', '02/05/2026'],
   ];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
@@ -1642,6 +1674,22 @@ function _baixarModeloBaseFazendas() {
 function _logBase(msg) {
   const el = document.getElementById('logBaseAtualizacao');
   if (el) el.insertAdjacentHTML('beforeend', `<div>${msg}</div>`);
+}
+
+// Normaliza um valor de DATA_CORTE vindo do Excel (Date via cellDates, serial numérico
+// de fallback, ou texto dd/mm/aaaa) para "YYYY-MM-DD", ou null se vazio/inválido.
+function _normalizarDataCorte(v) {
+  if (v === undefined || v === null || v === '') return null;
+  if (v instanceof Date) return isNaN(v) ? null : v.toISOString().slice(0, 10);
+  if (typeof v === 'number') {
+    const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+    return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  }
+  const s = String(v).trim();
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  const d = new Date(s);
+  return isNaN(d) ? null : d.toISOString().slice(0, 10);
 }
 
 async function processarAtualizacaoBase() {
@@ -1659,7 +1707,7 @@ async function processarAtualizacaoBase() {
     _logBase('Lendo arquivos...');
     const [bufIcol, bufFaz] = await Promise.all([fIcol.arrayBuffer(), fFaz.arrayBuffer()]);
     const wbIcol = XLSX.read(bufIcol, { type: 'array' });
-    const wbFaz  = XLSX.read(bufFaz,  { type: 'array' });
+    const wbFaz  = XLSX.read(bufFaz,  { type: 'array', cellDates: true });
 
     // ── Parse ICOL: aba "BASE PARA PLANEJAMENTO", colunas H/I/AA/AB por posição ──
     const sheetName = wbIcol.SheetNames.find(n => n.trim().toUpperCase() === 'BASE PARA PLANEJAMENTO') || wbIcol.SheetNames[0];
@@ -1691,15 +1739,16 @@ async function processarAtualizacaoBase() {
     // ── Parse base de fazendas: aba 1, colunas por nome ──
     const wsFaz = wbFaz.Sheets[wbFaz.SheetNames[0]];
     const rowsFaz = XLSX.utils.sheet_to_json(wsFaz, { raw: true });
-    const fazPorCod = new Map(); // codFaz → [{ talhao, areaHa, estagio }]
+    const fazPorCod = new Map(); // codFaz → [{ talhao, areaHa, estagio, dataCorte }]
     for (const r of rowsFaz) {
       const codFaz = Number(r['SECAO']);
       const talhao = Number(r['TALHAO']);
       if (isNaN(codFaz) || isNaN(talhao)) continue;
       const areaHa = Math.round((Number(r['AREA_PROD']) || 0) * 100) / 100;
       const estagio = String(r['ESTAGIO'] ?? '').trim();
+      const dataCorte = _normalizarDataCorte(r['DATA_CORTE']);
       if (!fazPorCod.has(codFaz)) fazPorCod.set(codFaz, []);
-      fazPorCod.get(codFaz).push({ talhao, areaHa, estagio });
+      fazPorCod.get(codFaz).push({ talhao, areaHa, estagio, dataCorte });
     }
     _logBase(`Base fazendas: ${rowsFaz.length} talhão(ões) lidos.`);
 
@@ -1708,7 +1757,7 @@ async function processarAtualizacaoBase() {
     let excluidasAdmin = 0;
     const progRows = [];
     for (const [codFaz, icolRow] of icolMap) {
-      if (String(codFaz).startsWith(CODFAZ_EXCLUIR_PREFIXO)) { excluidasAdmin++; continue; }
+      if (CODFAZ_EXCLUIR_PREFIXOS.some(p => String(codFaz).startsWith(p))) { excluidasAdmin++; continue; }
       const talhoes = fazPorCod.get(codFaz);
       if (!talhoes || !talhoes.length) { semBase++; continue; }
       for (const t of talhoes) {
@@ -1716,11 +1765,11 @@ async function processarAtualizacaoBase() {
         progRows.push({
           layer, frente: icolRow.frente, periodo_op: icolRow.periodoOp,
           cod_faz: codFaz, fazenda: icolRow.fazenda,
-          talhao: t.talhao, area_ha: t.areaHa, estagio: t.estagio,
+          talhao: t.talhao, area_ha: t.areaHa, estagio: t.estagio, data_corte: t.dataCorte,
         });
       }
     }
-    if (excluidasAdmin) _logBase(`${excluidasAdmin} fazenda(s) administrativa(s) (prefixo ${CODFAZ_EXCLUIR_PREFIXO}) excluída(s).`);
+    if (excluidasAdmin) _logBase(`${excluidasAdmin} fazenda(s) administrativa(s) (prefixo ${CODFAZ_EXCLUIR_PREFIXOS.join('/')}) excluída(s).`);
     if (semBase) _logBase(`<span style="color:var(--accent)">⚠ ${semBase} fazenda(s) do ICOL sem talhões na base de fazendas (ignoradas).</span>`);
     _logBase(`${progRows.length} talhão(ões) para processar.`);
     if (!progRows.length) { _logBase('<span style="color:var(--red)">Nada para enviar.</span>'); return; }
@@ -1820,6 +1869,7 @@ window.onload = async () => {
   if (!currentUser) setTimeout(openUserModal, 400);
   const lastFaz = sessionStorage.getItem('gf_lastFaz');
   if (lastFaz && FAZENDAS[lastFaz]) selectFazenda(lastFaz);
+  _wireDropZone(document.getElementById('dzArquivosReenvio'), _adicionarArquivoReenvio);
 };
 
 // ── Registros pendentes de dias anteriores ────────────────────────────────
@@ -1889,6 +1939,31 @@ function is18m(estagio) {
   const e = estagio.toUpperCase();
   return e.includes('18') || e.includes('INVERNO') ||
          e.includes('FORMA') || e === 'ANO';
+}
+
+// ── Tag de porte (dias corridos desde o corte) ──────────────────────────────
+// Safra atual: 03/2026 a 03/2027 (fim exclusivo).
+const SAFRA_INICIO = new Date(2026, 2, 1);
+const SAFRA_FIM     = new Date(2027, 2, 1);
+
+// Estágios elegíveis para a tag de porte (18 Meses / 2° Corte). Comparação por
+// substring, tolerando variações de acento/ordinal na coluna ESTAGIO da base de talhões.
+function estagioElegivelPorte(estagio) {
+  if (!estagio) return false;
+  const e = String(estagio).toUpperCase().trim();
+  return e.includes('18 MES') || e.includes('2 CORTE') || e.includes('2° CORTE') ||
+         e.includes('2º CORTE') || e.includes('2O CORTE');
+}
+
+// Retorna a quantidade de dias corridos desde DATA_CORTE até hoje, ou null se o
+// talhão não for elegível (estágio/"sem linhas" + corte dentro da safra atual).
+function tagPorte(t) {
+  if (!t.data_corte) return null;
+  const dataCorte = new Date(t.data_corte);
+  if (isNaN(dataCorte) || dataCorte < SAFRA_INICIO || dataCorte >= SAFRA_FIM) return null;
+  const elegivel = estagioElegivelPorte(t.estagio) || statusEfetivo(t) === 'SEM LINHAS';
+  if (!elegivel) return null;
+  return Math.floor((Date.now() - dataCorte.getTime()) / 86400000);
 }
 
 // Converte período de colheita (1-12) → "YYYY-MM" (todos no ano atual)
@@ -2121,8 +2196,10 @@ function renderTalhoes() {
     const td = FAZENDAS[currentFaz].talhoes[t];
     const badge18 = is18m(td.estagio)
       ? '<span class="tal-chip-18m">18m</span>' : '';
+    const dias = tagPorte(td);
+    const badgePorte = dias !== null ? `<span class="tal-chip-porte">${dias}d</span>` : '';
     return `<div class="tal-chip ${cobertura==='inteira'?'selected disabled':''}"
-                 data-tal="${t}" onclick="toggleTal(this)">${t}${badge18}</div>`;
+                 data-tal="${t}" onclick="toggleTal(this)">${t}${badge18}${badgePorte}</div>`;
   }).join('');
 
   updateTalCount();
@@ -2604,11 +2681,15 @@ async function consolidar() {
         <ul id="checklistArquivos" style="list-style:none;padding:0;margin:0 0 8px;font-size:11px;line-height:1.9">
           ${_arquivosEsperados.map(a => `<li data-nome="${a.nome}">${_checklistItemHtml(a)}</li>`).join('')}
         </ul>
-        <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoProjeto(this)">
+        <div class="dropzone" id="dzArquivosProjeto">
+          <div class="dropzone-hint">Arraste os arquivos aqui ou selecione:</div>
+          <input type="file" id="inputArquivosProjeto" accept=".dwg,.zip,.pdf" multiple onchange="_adicionarArquivoProjeto(this)">
+        </div>
         <button class="btn-modal-cancel" style="margin-left:8px" id="btnEnviarArquivos" onclick="enviarArquivosProjeto()" disabled>Enviar arquivos</button>
         <div id="uploadArquivosLog" style="margin-top:8px;font-size:11px;line-height:1.8"></div>
       </div>`, false);
     document.getElementById('btnFecharConsolidar').disabled = true;
+    _wireDropZone(document.getElementById('dzArquivosProjeto'), _adicionarArquivoProjeto);
 
     records = [];
     exportado = true;
@@ -2644,6 +2725,23 @@ async function _releaseUploadAsset(tag, name, file) {
 function _logArquivos(msg) {
   const el = document.getElementById('uploadArquivosLog');
   if (el) el.insertAdjacentHTML('beforeend', `<div>${msg}</div>`);
+}
+
+// Liga uma dropzone de arrastar-e-soltar a um handler existente (ex: _adicionarArquivoProjeto),
+// passando um objeto {files} que imita o <input> nativo — reutiliza a validação já existente.
+function _wireDropZone(zoneEl, handler) {
+  if (!zoneEl || zoneEl.dataset.dzWired) return;
+  zoneEl.dataset.dzWired = '1';
+  ['dragover', 'dragenter'].forEach(ev => zoneEl.addEventListener(ev, e => {
+    e.preventDefault();
+    zoneEl.classList.add('dropzone-over');
+  }));
+  ['dragleave', 'dragend'].forEach(ev => zoneEl.addEventListener(ev, () => zoneEl.classList.remove('dropzone-over')));
+  zoneEl.addEventListener('drop', e => {
+    e.preventDefault();
+    zoneEl.classList.remove('dropzone-over');
+    if (e.dataTransfer.files.length) handler({ files: e.dataTransfer.files });
+  });
 }
 
 // Render de um item do checklist de arquivos — compartilhado entre os fluxos de
@@ -3342,16 +3440,20 @@ function setView(name) {
 }
 
 // ── Status por fazenda ────────────────────────────────────────────────────
+// Status agregado de um grupo de talhões — prioridade A FAZER > REAVALIAR > CONCLUÍDO:
+// um único talhão pendente ou a confirmar já muda o status da fazenda inteira.
+function statusAgregado(tals) {
+  if (!tals.length) return { status: '—', cls: 'muted' };
+  if (tals.some(t => statusEfetivo(t) === 'A FAZER')) return { status: 'A FAZER', cls: 'blue' };
+  if (tals.some(isTalReavaliar)) return { status: 'REAVALIAR', cls: 'yellow' };
+  return { status: 'CONCLUÍDO', cls: 'green' };
+}
+
 function getFazStatus(name) {
   const tals = Object.values(FAZENDAS[name]?.talhoes || {});
   if (!tals.length) return { status: '—', cls: 'muted', ciclo: '—' };
-  const total  = tals.length;
-  const done   = tals.filter(isTalDone).length;
-  const ciclo  = tals.find(t => t.ciclo)?.ciclo || '—';
-  let status, cls;
-  if (done === total)  { status = 'CONCLUÍDO'; cls = 'green'; }
-  else                 { status = 'A FAZER';   cls = 'blue';  }
-  return { status, cls, ciclo };
+  const ciclo = tals.find(t => t.ciclo)?.ciclo || '—';
+  return { ...statusAgregado(tals), ciclo };
 }
 
 // ── Plano da Semana ───────────────────────────────────────────────────────
@@ -3525,7 +3627,7 @@ function talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filt
          (!filtFrente || String(t.frente) === filtFrente) &&
          (!filtCiclo  || t.ciclo === filtCiclo) &&
          matchUsuarioFiltro(t, filtUsuario) &&
-         (!filtStatus || (filtStatus === 'CONCLUÍDO' ? isTalDone(t) : !isTalDone(t)));
+         (!filtStatus || statusEfetivo(t) === filtStatus);
 }
 let _consultaDebounceTimer = null;
 function debouncedRenderConsulta() {
@@ -3697,8 +3799,7 @@ function renderConsulta(page) {
     const tals = allTals.filter(t => talhaoPassaFiltros(t, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus));
     const totalTals = tals.length;
     const conc  = tals.filter(isTalDone).length;
-    const status = totalTals === 0 ? '—' : (conc === totalTals ? 'CONCLUÍDO' : 'A FAZER');
-    const cls    = status === 'CONCLUÍDO' ? 'green' : (status === 'A FAZER' ? 'blue' : 'muted');
+    const { status, cls } = statusAgregado(tals);
     const frentes = [...new Set(tals.map(t => t.frente).filter(Boolean))].sort((a,b)=>a-b).join(', ') || '—';
     const ciclos  = [...new Set(tals.map(t => t.ciclo).filter(Boolean))].sort().join(', ') || '—';
     const haTotal = tals.reduce((s, t) => s + (t.ha || 0), 0);
@@ -3770,17 +3871,21 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
     .filter(t => talhaoPassaFiltros(allTals[t], filtMesArg, filtFrenteArg, filtCicloArg, filtUsuarioArg, filtStatusArg));
   const talRows = sorted.map(t => {
     const td = allTals[t];
-    const stCls = isTalDone(td) ? (td.exp === 'CONCLUIDO' ? 'green' : 'muted') : 'blue';
-    const stLbl = td.exp === 'CONCLUIDO' ? 'Concluído' : (td.exp === 'SEM LINHAS' || td.tipo === 'SEM LINHAS') ? 'Sem Linhas' : 'A Fazer';
+    const st    = statusEfetivo(td);
+    const stCls = st === 'CONCLUIDO' ? 'green' : st === 'REAVALIAR' ? 'yellow' : st === 'SEM LINHAS' ? 'muted' : 'blue';
+    const stLbl = st === 'CONCLUIDO' ? 'Concluído' : st === 'REAVALIAR' ? 'Reavaliar' : st === 'SEM LINHAS' ? 'Sem Linhas' : 'A Fazer';
     const _ym   = talYM(td);
     const data  = _ym ? _ym.split('-').reverse().join('/') : '—';
     const quando = td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '—';
+    const dias   = tagPorte(td);
+    const porte  = dias !== null ? `${dias}d` : '—';
     return `<tr>
       <td style="font-family:monospace;font-weight:700">${t}</td>
       <td>${td.tipo || '—'}</td>
       <td><span class="faz-tag faz-tag-${stCls}" style="font-size:10px">${stLbl}</span></td>
       <td style="font-family:monospace">${(td.ha || 0).toFixed(1)} ha</td>
       <td>${td.estagio || '—'}</td>
+      <td style="font-family:monospace">${porte}</td>
       <td style="font-family:monospace">${data}</td>
       <td>${td.usuario || '—'}</td>
       <td style="font-family:monospace">${quando}</td>
@@ -3789,7 +3894,7 @@ function toggleFazDetail(name, rowEl, filtMesArg, filtFrenteArg, filtCicloArg, f
 
   inner.innerHTML = `<table class="consulta-detail-table">
     <thead><tr>
-      <th>Talhão</th><th>Tipo</th><th>Status</th><th>Área</th><th>Estágio</th><th>Mês</th>
+      <th>Talhão</th><th>Tipo</th><th>Status</th><th>Área</th><th>Estágio</th><th>Porte</th><th>Mês</th>
       <th>Registrado por</th><th>Quando</th>
     </tr></thead>
     <tbody>${talRows}</tbody>
@@ -3805,6 +3910,7 @@ function getThemeColors() {
     green:  s.getPropertyValue('--green').trim()   || '#4CAF72',
     accent: s.getPropertyValue('--accent').trim()  || '#C8960C',
     blue:   s.getPropertyValue('--blue').trim()    || '#5A9FD4',
+    yellow: s.getPropertyValue('--yellow').trim()  || '#D9B84C',
     muted:  s.getPropertyValue('--muted').trim()   || '#7A8875',
     text:   s.getPropertyValue('--text').trim()    || '#E5EAE0',
     border: s.getPropertyValue('--border').trim()  || '#36422F',
@@ -3813,12 +3919,25 @@ function getThemeColors() {
   };
 }
 
+// Status "de verdade" de um talhão: CONCLUIDO só quando há um usuário por trás (log_exportacoes);
+// CONCLUIDO sem usuário (dado herdado/editado direto no banco) vira REAVALIAR, pendente de confirmação.
+function statusEfetivo(t) {
+  if (t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS') return 'SEM LINHAS';
+  if (t.exp === 'CONCLUIDO') return t.usuario ? 'CONCLUIDO' : 'REAVALIAR';
+  return 'A FAZER';
+}
+
 function isTalDone(t) {
-  return t.exp === 'CONCLUIDO' || t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS';
+  const st = statusEfetivo(t);
+  return st === 'CONCLUIDO' || st === 'SEM LINHAS';
+}
+
+function isTalReavaliar(t) {
+  return statusEfetivo(t) === 'REAVALIAR';
 }
 
 function computeDash() {
-  let haTotal = 0, haConc = 0, haFazer = 0, haSemLin = 0;
+  let haTotal = 0, haConc = 0, haFazer = 0, haSemLin = 0, haReavaliar = 0;
   let fazConc = 0;
   let ha18Total = 0, ha18Conc = 0, ha18Fazer = 0;
   const byFrente = {}, byMonth = {};
@@ -3830,23 +3949,27 @@ function computeDash() {
 
     tals.forEach(t => {
       const ha = t.ha || 0;
-      const semLin = t.exp === 'SEM LINHAS' || t.tipo === 'SEM LINHAS';
+      const st = statusEfetivo(t);
       haTotal += ha;
-      if (semLin)              haSemLin += ha;
-      if (isTalDone(t))        haConc   += ha;
-      else                     haFazer  += ha;
+      if (st === 'SEM LINHAS')      haSemLin    += ha;
+      if (isTalDone(t))             haConc      += ha;
+      else if (st === 'REAVALIAR')  haReavaliar += ha;
+      else                          haFazer     += ha;
 
       {
         const f = t.frente ? 'Frente ' + t.frente : 'Indefinida';
-        if (!byFrente[f]) byFrente[f] = { conc: 0, fazer: 0 };
-        isTalDone(t) ? byFrente[f].conc += ha : byFrente[f].fazer += ha;
+        if (!byFrente[f]) byFrente[f] = { conc: 0, fazer: 0, reavaliar: 0 };
+        if (isTalDone(t))            byFrente[f].conc      += ha;
+        else if (st === 'REAVALIAR') byFrente[f].reavaliar += ha;
+        else                         byFrente[f].fazer      += ha;
       }
 
       {
         const ym = talYM(t) || 'sem-mes';
-        if (!byMonth[ym]) byMonth[ym] = { total: 0, conc: 0 };
+        if (!byMonth[ym]) byMonth[ym] = { total: 0, conc: 0, reavaliar: 0 };
         byMonth[ym].total += ha;
-        if (isTalDone(t)) byMonth[ym].conc += ha;
+        if (isTalDone(t))            byMonth[ym].conc      += ha;
+        else if (st === 'REAVALIAR') byMonth[ym].reavaliar += ha;
       }
 
       if (is18m(t.estagio)) {
@@ -3858,7 +3981,7 @@ function computeDash() {
   });
 
   return {
-    haTotal, haConc, haFazer, haSemLin,
+    haTotal, haConc, haFazer, haSemLin, haReavaliar,
     fazTotal: FAZENDA_NAMES.length, fazConc,
     pct: haTotal > 0 ? Math.round(haConc / haTotal * 100) : 0,
     byFrente, byMonth,
@@ -3886,6 +4009,7 @@ function renderDashboard() {
     { label: 'Total Fazendas', val: d.fazTotal.toLocaleString('pt-BR'), sub: `${d.fazConc} fazenda${d.fazConc!==1?'s':''} concluída${d.fazConc!==1?'s':''}`, cls: '' },
     { label: 'Área Total',     val: fmtHa(d.haTotal), sub: 'hectares programados', cls: '' },
     { label: 'Ha Concluído',   val: fmtHa(d.haConc),  sub: `${d.pct}% do total`, cls: 'green' },
+    { label: 'Ha Reavaliar',   val: fmtHa(d.haReavaliar), sub: 'concluído sem registro de usuário', cls: 'yellow' },
     { label: 'Ha A Fazer',     val: fmtHa(d.haFazer), sub: 'hectares restantes', cls: 'blue' },
     { label: 'Ha Sem Linhas',  val: fmtHa(d.haSemLin),sub: 'incluído em concluído', cls: 'accent' },
   ].map(k => `<div class="dash-kpi-card${k.cls ? ' ' + k.cls : ''}">
@@ -3922,7 +4046,11 @@ function renderDashboard() {
           maxBarThickness: 64,
           borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 5, bottomRight: 5 },
           borderSkipped: 'top' },
-        { label: 'A Fazer',   data: months.map(m => +(d.byMonth[m].total - d.byMonth[m].conc).toFixed(0)),
+        { label: 'Reavaliar', data: months.map(m => +d.byMonth[m].reavaliar.toFixed(0)),
+          backgroundColor: c.yellow + 'BB',
+          maxBarThickness: 64,
+          borderSkipped: false },
+        { label: 'A Fazer',   data: months.map(m => +(d.byMonth[m].total - d.byMonth[m].conc - d.byMonth[m].reavaliar).toFixed(0)),
           backgroundColor: c.blue  + 'BB',
           maxBarThickness: 64,
           borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
@@ -3963,6 +4091,9 @@ function renderDashboard() {
           backgroundColor: c.green + 'BB', maxBarThickness: 32,
           borderRadius: { topLeft: 5, bottomLeft: 5, topRight: 0, bottomRight: 0 },
           borderSkipped: 'right' },
+        { label: 'Reavaliar', data: fLabels.map(f => +d.byFrente[f].reavaliar.toFixed(0)),
+          backgroundColor: c.yellow + 'BB', maxBarThickness: 32,
+          borderSkipped: false },
         { label: 'A Fazer',   data: fLabels.map(f => +d.byFrente[f].fazer.toFixed(0)),
           backgroundColor: c.blue  + 'BB', maxBarThickness: 32,
           borderRadius: { topLeft: 0, bottomLeft: 0, topRight: 5, bottomRight: 5 },

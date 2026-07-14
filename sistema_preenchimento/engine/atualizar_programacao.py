@@ -4,7 +4,7 @@ Uso: python atualizar_programacao.py  OU  duplo clique no ATUALIZAR.bat
 
 Estrutura esperada:
   base_icol/*.xlsm          ← base ICOL (agendamento por frente)
-  base_fazendas/*.xlsx      ← base mestre de talhões (área, estágio)
+  base_fazendas/*.xlsx      ← base mestre de talhões (área, estágio, data de corte)
   supabase_config.json      ← { "url": "...", "secret_key": "sb_secret_..." }
 
 Lê a base ICOL + base de fazendas, monta a programação por talhão e faz
@@ -36,7 +36,9 @@ try:
 except Exception:
     _cfg = {}
 
-CODFAZ_EXCLUIR_PREFIXO = _cfg.get('codfaz_excluir_prefixo', '20')
+CODFAZ_EXCLUIR_PREFIXOS = _cfg.get('codfaz_excluir_prefixo', ['20', '21'])
+if isinstance(CODFAZ_EXCLUIR_PREFIXOS, str):
+    CODFAZ_EXCLUIR_PREFIXOS = [CODFAZ_EXCLUIR_PREFIXOS]
 
 _config_path = os.path.join(_BASE_DIR, 'supabase_config.json')
 if not os.path.exists(_config_path):
@@ -105,6 +107,10 @@ else:
     df_base['AREA_HA'] = pd.to_numeric(df_base['AREA_HA'], errors='coerce')
     if 'ESTAGIO' not in df_base.columns:
         df_base['ESTAGIO'] = ''
+    if 'DATA_CORTE' not in df_base.columns:
+        df_base['DATA_CORTE'] = pd.NaT
+    else:
+        df_base['DATA_CORTE'] = pd.to_datetime(df_base['DATA_CORTE'], errors='coerce', dayfirst=True)
     df_base = df_base.dropna(subset=['COD FAZ', 'TALHOES']).reset_index(drop=True)
     print(f"  {len(df_base)} talhões na base fazendas.\n")
 
@@ -147,7 +153,7 @@ print(f"  {len(df_icol)} fazendas únicas no ICOL{f' ({n_dup_icol} linhas duplic
 # ── 4. Merge: ICOL (fazenda) LEFT JOIN base_fazendas (talhões) ───────────
 if df_base is not None:
     result = df_icol[['COD FAZ', 'FAZENDA', 'FRENTE', 'PERIODO_OP']].merge(
-        df_base[['COD FAZ', 'TALHOES', 'AREA_HA', 'ESTAGIO']],
+        df_base[['COD FAZ', 'TALHOES', 'AREA_HA', 'ESTAGIO', 'DATA_CORTE']],
         on='COD FAZ',
         how='left'
     )
@@ -168,15 +174,16 @@ else:
     result['TALHOES'] = None
     result['AREA_HA'] = None
     result['ESTAGIO'] = ''
+    result['DATA_CORTE'] = pd.NaT
 
 result = result.sort_values(['FRENTE', 'PERIODO_OP']).reset_index(drop=True)
 
-# Fazendas com COD FAZ iniciando no prefixo configurado são unidades administrativas
+# Fazendas com COD FAZ iniciando em algum dos prefixos configurados são unidades administrativas
 n_antes = result['COD FAZ'].nunique()
-result   = result[~result['COD FAZ'].astype(str).str.startswith(CODFAZ_EXCLUIR_PREFIXO)].reset_index(drop=True)
+result   = result[~result['COD FAZ'].astype(str).str.startswith(tuple(CODFAZ_EXCLUIR_PREFIXOS))].reset_index(drop=True)
 n_excluidas = n_antes - result['COD FAZ'].nunique()
 if n_excluidas:
-    print(f"  Filtro administrativo (COD FAZ {CODFAZ_EXCLUIR_PREFIXO}x): {n_excluidas} fazenda(s) excluída(s).\n")
+    print(f"  Filtro administrativo (COD FAZ {'/'.join(CODFAZ_EXCLUIR_PREFIXOS)}x): {n_excluidas} fazenda(s) excluída(s).\n")
 
 result = result.dropna(subset=['TALHOES']).reset_index(drop=True)
 
@@ -217,6 +224,7 @@ for _, row in result.iterrows():
         'ciclo':      ciclo,
         'area_ha':    area_ha,
         'estagio':    str(row.get('ESTAGIO', '') or '').strip(),
+        'data_corte': row['DATA_CORTE'].date().isoformat() if pd.notna(row.get('DATA_CORTE')) else None,
     })
 
 print(f"Enviando {len(prog_rows)} linhas (upsert por LAYER)...")
