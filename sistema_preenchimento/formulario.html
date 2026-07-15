@@ -1656,6 +1656,7 @@ async function carregarDadosSupabase() {
         ha: row.area_ha || 0, dia: null, estagio: row.estagio || '', data_corte: row.data_corte || null,
         voo_control_status: row.voo_control_status ?? null,
         voo_control_status_descricao: row.voo_control_status_descricao || '',
+        voo_verify_flight_size: row.voo_verify_flight_size ?? null,
         usuario: '', data_consolidacao: null
       };
       FAZENDAS[fazKey].talhoes[String(row.talhao)] = td;
@@ -2009,16 +2010,19 @@ function tagPorte(t) {
 }
 
 // Bucket de cor da tag de porte, a partir do status de voo sincronizado do dronemgmt
-// (projeto "Falhas Soca", ver engine/atualizar_voos.py). Códigos confirmados contra dados
-// reais: 2 "A voar" e 11 (fila, sem imagem/motivo) = já agendado; 3/8 = imagem processada
-// mas rejeitada (Porte Baixo/Alto, Imagem não recebida, Apontamento Duplicado) = voado,
-// precisa reprocessar; 10 = Relatório divulgado (final).
+// (projeto "Falhas Soca", ver engine/atualizar_voos.py). control_status 3/8 = imagem já
+// processada mas rejeitada (Porte Baixo/Alto, Imagem não recebida, Apontamento Duplicado) =
+// voado, precisa reprocessar; 10 = Relatório divulgado (final). "Agendado" NÃO usa
+// control_status — é especificamente verify_flight_size === 5, confirmado como o valor por
+// trás do rótulo "Voo liberado" na tela "Verificar porte" do dronemgmt (outros valores desse
+// campo ainda não foram mapeados, então ficam como "sem agendamento" por padrão).
 function vooBucket(t) {
   const cod = t.voo_control_status;
-  if (cod == null) return 'sem_agendamento';               // nenhum registro no dronemgmt
+  if (cod == null && t.voo_verify_flight_size == null) return 'sem_agendamento'; // nenhum registro no dronemgmt
   if (cod === 10) return 'divulgado';                       // Relatório divulgado
   if (cod === 3 || cod === 8) return 'voado';               // imagem processada (rejeitada/reprocessar)
-  return 'agendado';                                        // 2 (A voar), 11 (na fila) e demais códigos ainda não vistos
+  if (t.voo_verify_flight_size === 5) return 'agendado';    // "Voo liberado"
+  return 'sem_agendamento';
 }
 const VOO_BUCKET_CLASS = { agendado: 'porte-agendado', voado: 'porte-voado', divulgado: 'porte-divulgado' };
 

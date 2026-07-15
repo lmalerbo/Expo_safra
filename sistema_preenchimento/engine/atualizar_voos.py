@@ -264,6 +264,7 @@ for rec in records:
         'flight_project_descricao':   _fix_mojibake(flight_project.get('description')),
         'control_status':             control_status,
         'control_status_descricao':   STATUS_LABELS.get(control_status),
+        'verify_flight_size':         rec.get('verifyFlightSize'),
         'start_date_flight':          rec.get('startDateFlight'),
         'end_date_flight':            rec.get('endDateFlight'),
         'scheduled_date':             rec.get('scheduledDate'),
@@ -308,10 +309,16 @@ for layer_val, recs in por_layer.items():
     recs_ordenados = sorted(recs, key=lambda r: r.get('modifiedUtc') or '', reverse=True)
     mais_recente = recs_ordenados[0]
     status = mais_recente.get('controlStatus')
+    verify_flight_size = mais_recente.get('verifyFlightSize')
     texto = STATUS_LABELS.get(status, f"Status {status}")
     if len(recs_ordenados) > 1:
         texto = f"{texto} ({len(recs_ordenados)}x)"
-    voo_updates.append({'layer': layer_val, 'voo_control_status': status, 'voo_control_status_descricao': texto})
+    voo_updates.append({
+        'layer': layer_val,
+        'voo_control_status': status,
+        'voo_control_status_descricao': texto,
+        'voo_verify_flight_size': verify_flight_size,
+    })
 
 print(f"  {len(voo_updates)} LAYER(s) com voo de Falha Soca.\n")
 
