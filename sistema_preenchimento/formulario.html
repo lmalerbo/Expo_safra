@@ -354,6 +354,8 @@
     display: flex; align-items: center; gap: 6px;
     margin-top: 8px; flex-wrap: wrap;
   }
+  .faz-filter-actions { margin-top: 6px; }
+  .faz-filter-actions .consulta-filter-count { margin-left: auto; }
   .faz-filter-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 1px; color: var(--muted); white-space: nowrap;
@@ -1247,6 +1249,8 @@
         <option value="85a125">85d – 125d</option>
         <option value="acima125">Acima de 125d</option>
       </select>
+    </div>
+    <div class="faz-filter-row faz-filter-actions">
       <button class="faz-filter-btn" id="btnConsultaSel" onclick="toggleConsultaSelectMode()">&#9744; Selecionar</button>
       <button class="faz-filter-btn" onclick="limparFiltrosConsulta()">Limpar</button>
       <button class="faz-filter-btn" onclick="exportarConsultaExcel()" title="Exportar para Excel (respeita os filtros atuais)">&#8681; Exportar Excel</button>
@@ -3900,7 +3904,7 @@ function exportarConsultaExcel() {
       const _ym = talYM(td);
       const dias = tagPorte(td);
       linhas.push([
-        name, d.cod, +t, td.frente || '', td.ciclo || '', stLbl,
+        td.layer, name, d.cod, +t, td.frente || '', td.ciclo || '', stLbl,
         +((td.ha || 0).toFixed(1)), td.estagio || '', dias !== null ? dias : '',
         _ym ? _ym.split('-').reverse().join('/') : '', td.usuario || '',
         td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '',
@@ -3911,12 +3915,12 @@ function exportarConsultaExcel() {
   if (!linhas.length) { showToast('Nenhum registro para exportar com os filtros atuais.'); return; }
 
   const wsData = [
-    ['FAZENDA', 'COD', 'TALHAO', 'FRENTE', 'CICLO', 'STATUS', 'AREA_HA', 'ESTAGIO', 'PORTE_DIAS', 'MES', 'REGISTRADO_POR', 'QUANDO'],
+    ['LAYER', 'FAZENDA', 'COD', 'TALHAO', 'FRENTE', 'CICLO', 'STATUS', 'AREA_HA', 'ESTAGIO', 'PORTE_DIAS', 'MES', 'REGISTRADO_POR', 'QUANDO'],
     ...linhas,
   ];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = [26, 10, 8, 8, 8, 12, 10, 12, 10, 10, 16, 18].map(w => ({ wch: w }));
+  ws['!cols'] = [12, 26, 10, 8, 8, 8, 12, 10, 12, 10, 10, 16, 18].map(w => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, 'Consulta');
   const hoje = new Date().toISOString().slice(0, 10);
   XLSX.writeFile(wb, `consulta_frentes_${hoje}.xlsx`);
