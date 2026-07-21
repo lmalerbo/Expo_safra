@@ -1249,6 +1249,7 @@
       </select>
       <button class="faz-filter-btn" id="btnConsultaSel" onclick="toggleConsultaSelectMode()">&#9744; Selecionar</button>
       <button class="faz-filter-btn" onclick="limparFiltrosConsulta()">Limpar</button>
+      <button class="faz-filter-btn" onclick="exportarConsultaExcel()" title="Exportar para Excel (respeita os filtros atuais)">&#8681; Exportar Excel</button>
       <span class="consulta-filter-count" id="consultaCount"></span>
     </div>
   </div>
@@ -3871,6 +3872,55 @@ function limparFiltrosConsulta() {
   document.getElementById('cFiltroStatus').value  = '';
   document.getElementById('cFiltroPorte').value   = '';
   renderConsulta();
+}
+
+// Exporta para Excel um talhão por linha, respeitando os filtros atuais da aba Consultas
+// (mesma busca/filtros usados em renderConsulta()).
+function exportarConsultaExcel() {
+  const q          = (document.getElementById('consultaSearch')?.value || '').toLowerCase();
+  const filtMes    = document.getElementById('cFiltroMes')?.value     || '';
+  const filtFrente = document.getElementById('cFiltroFrente')?.value  || '';
+  const filtCiclo  = document.getElementById('cFiltroCiclo')?.value   || '';
+  const filtUsuario= document.getElementById('cFiltroUsuario')?.value || '';
+  const filtStatus = document.getElementById('cFiltroStatus')?.value  || '';
+  const filtPorte  = document.getElementById('cFiltroPorte')?.value   || '';
+
+  const names = q
+    ? FAZENDA_NAMES.filter(n => n.toLowerCase().includes(q) || String(FAZENDAS[n].cod).includes(q))
+    : FAZENDA_NAMES;
+
+  const linhas = [];
+  names.forEach(name => {
+    const d = FAZENDAS[name];
+    Object.keys(d.talhoes).sort((a, b) => +a - +b).forEach(t => {
+      const td = d.talhoes[t];
+      if (!talhaoPassaFiltros(td, filtMes, filtFrente, filtCiclo, filtUsuario, filtStatus, filtPorte)) return;
+      const st = statusEfetivo(td);
+      const stLbl = st === 'CONCLUIDO' ? 'Concluído' : st === 'REAVALIAR' ? 'Reavaliar' : st === 'SEM LINHAS' ? 'Sem Linhas' : 'A Fazer';
+      const _ym = talYM(td);
+      const dias = tagPorte(td);
+      linhas.push([
+        name, d.cod, +t, td.frente || '', td.ciclo || '', stLbl,
+        +((td.ha || 0).toFixed(1)), td.estagio || '', dias !== null ? dias : '',
+        _ym ? _ym.split('-').reverse().join('/') : '', td.usuario || '',
+        td.data_consolidacao ? new Date(td.data_consolidacao).toLocaleString('pt-BR') : '',
+      ]);
+    });
+  });
+
+  if (!linhas.length) { showToast('Nenhum registro para exportar com os filtros atuais.'); return; }
+
+  const wsData = [
+    ['FAZENDA', 'COD', 'TALHAO', 'FRENTE', 'CICLO', 'STATUS', 'AREA_HA', 'ESTAGIO', 'PORTE_DIAS', 'MES', 'REGISTRADO_POR', 'QUANDO'],
+    ...linhas,
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [26, 10, 8, 8, 8, 12, 10, 12, 10, 10, 16, 18].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Consulta');
+  const hoje = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `consulta_frentes_${hoje}.xlsx`);
+  showToast(`${linhas.length} talhão(ões) exportado(s).`);
 }
 
 const CONSULTA_PAGE_SIZE = 50;
